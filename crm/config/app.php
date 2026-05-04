@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Optional Route Prefix
+    |--------------------------------------------------------------------------
+    |
+    | This allows the CRM to be previewed under an existing domain path, such
+    | as /crm, and later moved to a clean subdomain without code changes.
+    |
+    */
+
+    'route_prefix' => trim((string) env('CRM_ROUTE_PREFIX', ''), '/'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

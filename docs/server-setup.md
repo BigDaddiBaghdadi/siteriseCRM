@@ -66,3 +66,19 @@ http://127.0.0.1:8010/admin
 
 Production hosting should use the web server/PHP runtime rather than `artisan serve`.
 
+## Existing-Domain Preview Path
+
+If DNS for a new subdomain is not ready, the CRM can be previewed under an existing domain path.
+
+Set:
+
+```env
+APP_URL=https://example.com/crm
+CRM_ROUTE_PREFIX=crm
+```
+
+Then the admin dashboard is available at:
+
+```text
+https://example.com/crm/admin
+```

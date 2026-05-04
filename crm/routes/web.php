@@ -6,9 +6,12 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LeadController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/admin');
+$prefix = config('app.route_prefix');
+$adminPrefix = $prefix ? "{$prefix}/admin" : 'admin';
 
-Route::prefix('admin')->name('admin.')->group(function (): void {
+Route::redirect($prefix ?: '/', "/{$adminPrefix}");
+
+Route::prefix($adminPrefix)->name('admin.')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::resource('leads', LeadController::class);
