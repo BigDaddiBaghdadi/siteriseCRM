@@ -1,0 +1,100 @@
+@extends('layouts.admin')
+
+@section('title', 'Audit #'.$audit->id)
+@section('subtitle', $audit->lead->business_name)
+
+@section('actions')
+    <form method="post" action="{{ route('admin.audits.approve', $audit) }}">
+        @csrf
+        <button type="submit">Approve</button>
+    </form>
+    <form method="post" action="{{ route('admin.audits.reject', $audit) }}">
+        @csrf
+        <button type="submit" class="danger">Reject</button>
+    </form>
+@endsection
+
+@section('content')
+    <div class="grid grid-4">
+        <div class="panel">
+            <div class="muted">Overall</div>
+            <div class="metric">{{ $audit->overall_score ?? 'n/a' }}</div>
+        </div>
+        <div class="panel">
+            <div class="muted">Redesign</div>
+            <div class="metric">{{ $audit->redesign_score ?? 'n/a' }}</div>
+        </div>
+        <div class="panel">
+            <div class="muted">SEO</div>
+            <div class="metric">{{ $audit->seo_score ?? 'n/a' }}</div>
+        </div>
+        <div class="panel">
+            <div class="muted">Lead status</div>
+            <div class="metric" style="font-size: 18px;">{{ str_replace('_', ' ', $audit->lead->status) }}</div>
+        </div>
+    </div>
+
+    <section class="panel">
+        <h2>Lead</h2>
+        <div class="grid grid-2">
+            <div><strong>Business</strong><br><a href="{{ route('admin.leads.show', $audit->lead) }}">{{ $audit->lead->business_name }}</a></div>
+            <div><strong>Website</strong><br><a href="{{ $audit->lead->website_url }}" target="_blank" rel="noreferrer">{{ $audit->lead->website_url }}</a></div>
+            <div><strong>Category</strong><br>{{ $audit->lead->category ?: 'n/a' }}</div>
+            <div><strong>Location</strong><br>{{ trim(($audit->lead->city ?: '').' '.($audit->lead->country ?: '')) ?: 'n/a' }}</div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Summary</h2>
+        <p>{{ $audit->business_summary ?: 'No summary submitted.' }}</p>
+    </section>
+
+    <div class="grid grid-2">
+        <section class="panel">
+            <h2>Issues</h2>
+            @if ($audit->issues_json)
+                <ul class="list">
+                    @foreach ($audit->issues_json as $issue)
+                        <li>{{ $issue }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <div class="muted">No issues submitted.</div>
+            @endif
+        </section>
+
+        <section class="panel">
+            <h2>Recommendations</h2>
+            @if ($audit->recommendations_json)
+                <ul class="list">
+                    @foreach ($audit->recommendations_json as $recommendation)
+                        <li>{{ $recommendation }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <div class="muted">No recommendations submitted.</div>
+            @endif
+        </section>
+    </div>
+
+    <div class="grid grid-2">
+        <section class="panel">
+            <h2>Contact</h2>
+            <div class="pre">{{ json_encode($audit->contact_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</div>
+        </section>
+
+        <section class="panel">
+            <h2>Technology</h2>
+            <div class="pre">{{ json_encode($audit->technology_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</div>
+        </section>
+    </div>
+
+    <section class="panel">
+        <h2>Screenshots</h2>
+        <div class="grid grid-2">
+            <div><strong>Desktop</strong><br>{{ $audit->desktop_screenshot_path ?: 'Not submitted yet' }}</div>
+            <div><strong>Mobile</strong><br>{{ $audit->mobile_screenshot_path ?: 'Not submitted yet' }}</div>
+        </div>
+    </section>
+@endsection
+
