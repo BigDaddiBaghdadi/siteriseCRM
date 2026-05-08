@@ -199,6 +199,8 @@ class WorkerDiscoveryController extends Controller
         foreach ([
             'desktop_base64' => ['desktop_file', 'png'],
             'mobile_base64' => ['mobile_file', 'png'],
+            'desktop_jpeg_base64' => ['desktop_file', 'jpg'],
+            'mobile_jpeg_base64' => ['mobile_file', 'jpg'],
             'html_base64' => ['html_file', 'html'],
         ] as $sourceKey => [$targetKey, $extension]) {
             if (empty($payload[$sourceKey]) || ! is_string($payload[$sourceKey])) {
