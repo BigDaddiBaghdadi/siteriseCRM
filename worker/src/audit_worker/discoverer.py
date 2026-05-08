@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any
+from urllib.parse import quote_plus, urlencode
+from urllib.request import Request, urlopen
+
+from .auditor import audit_url
 
 
 DEMO_PATTERNS = [
@@ -39,21 +44,175 @@ DEMO_PATTERNS = [
     },
 ]
 
+NICHE_TAGS: dict[str, list[tuple[str, str]]] = {
+    "dentist": [("amenity", "dentist")],
+    "dentists": [("amenity", "dentist")],
+    "beauty": [("shop", "beauty"), ("shop", "hairdresser")],
+    "beauty salons": [("shop", "beauty"), ("shop", "hairdresser")],
+    "hairdresser": [("shop", "hairdresser")],
+    "gyms": [("leisure", "fitness_centre"), ("sport", "fitness")],
+    "gym": [("leisure", "fitness_centre"), ("sport", "fitness")],
+    "restaurants": [("amenity", "restaurant"), ("amenity", "fast_food"), ("amenity", "cafe")],
+    "restaurant": [("amenity", "restaurant")],
+    "plumbers": [("craft", "plumber")],
+    "plumber": [("craft", "plumber")],
+    "law firms": [("office", "lawyer")],
+    "lawyer": [("office", "lawyer")],
+    "accountants": [("office", "accountant")],
+    "accountant": [("office", "accountant")],
+}
+
+
+class DiscoveryError(RuntimeError):
+    pass
+
 
 def discover_leads(job: dict[str, Any], provider: str = "demo") -> list[dict[str, Any]]:
-    """Discover leads for a CRM discovery job.
+    """Discover leads for a CRM discovery job."""
 
-    The current implementation intentionally supports a deterministic demo provider.
-    Real providers such as Google Places, SerpAPI, DataForSEO, or Apify can plug in
-    behind this function without changing the CRM API contract.
-    """
+    provider = provider.lower().strip()
+    if provider == "demo":
+        return _demo_leads(job)
+    if provider == "osm":
+        return _osm_leads(job)
 
-    if provider != "demo":
-        raise RuntimeError(
-            f"Unsupported discovery provider '{provider}'. Set DISCOVERY_PROVIDER=demo or implement a provider adapter."
+    raise RuntimeError(
+        f"Unsupported discovery provider '{provider}'. Use DISCOVERY_PROVIDER=demo or DISCOVERY_PROVIDER=osm."
+    )
+
+
+def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
+    niche = _clean(job.get("niche")) or _stable_random_niche(job)
+    if job.get("random_niche"):
+        niche = _stable_random_niche(job)
+
+    city = _clean(job.get("city"))
+    if not city:
+        raise DiscoveryError("OSM discovery requires a city.")
+
+    country = _clean(job.get("country"))
+    target = str(job.get("target") or "both")
+    limit = max(1, min(int(job.get("result_limit") or 15), 50))
+    tags = _tags_for_niche(niche)
+    area_id = _nominatim_area_id(city=city, country=country)
+    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 4)
+
+    leads: list[dict[str, Any]] = []
+    seen_names: set[str] = set()
+
+    for element in elements:
+        tags_map = element.get("tags") or {}
+        business_name = _clean(tags_map.get("name"))
+        if not business_name or business_name.lower() in seen_names:
+            continue
+
+        website = _first_present(tags_map, ["website", "contact:website", "url"])
+        if target == "no_website" and website:
+            continue
+        if target == "needs_redesign" and not website:
+            continue
+
+        seen_names.add(business_name.lower())
+        source_url = f"https://www.openstreetmap.org/{element.get('type', 'node')}/{element.get('id')}"
+        phone = _first_present(tags_map, ["phone", "contact:phone", "mobile", "contact:mobile"])
+        email = _first_present(tags_map, ["email", "contact:email"])
+        category = _category_from_tags(tags_map, fallback=niche)
+
+        lead: dict[str, Any] = {
+            "business_name": business_name,
+            "category": category,
+            "city": city,
+            "country": country,
+            "website_url": website,
+            "source": "openstreetmap",
+            "source_url": source_url,
+            "phone": phone,
+            "email": email,
+            "notes": _osm_pitch_note(website=website, source_url=source_url),
+        }
+
+        if website:
+            try:
+                lead["audit"] = audit_url(website, timeout_seconds=12)
+            except Exception as exc:
+                lead["notes"] += f" Website audit failed during discovery: {exc}."
+
+        leads.append(lead)
+        if len(leads) >= limit:
+            break
+
+    if not leads:
+        raise DiscoveryError(f"No OSM leads found for {niche} in {city} matching target={target}.")
+
+    return leads
+
+
+def _nominatim_area_id(city: str, country: str | None) -> int:
+    query = city if not country else f"{city}, {country}"
+    url = "https://nominatim.openstreetmap.org/search?" + urlencode(
+        {"q": query, "format": "jsonv2", "limit": "1"}
+    )
+    data = _json_get(url)
+    if not data:
+        raise DiscoveryError(f"Could not geocode city with Nominatim: {query}")
+
+    osm_type = data[0].get("osm_type")
+    osm_id = int(data[0].get("osm_id"))
+    if osm_type == "relation":
+        return 3_600_000_000 + osm_id
+    if osm_type == "way":
+        return 2_400_000_000 + osm_id
+    raise DiscoveryError(f"Nominatim returned unsupported OSM type for area lookup: {osm_type}")
+
+
+def _overpass_businesses(area_id: int, tags: list[tuple[str, str]], limit: int) -> list[dict[str, Any]]:
+    selectors = []
+    for key, value in tags:
+        safe_key = key.replace('"', '')
+        safe_value = value.replace('"', '')
+        selectors.extend(
+            [
+                f'node["{safe_key}"="{safe_value}"]["name"](area.searchArea);',
+                f'way["{safe_key}"="{safe_value}"]["name"](area.searchArea);',
+                f'relation["{safe_key}"="{safe_value}"]["name"](area.searchArea);',
+            ]
         )
 
-    return _demo_leads(job)
+    query = f"""
+[out:json][timeout:25];
+area({area_id})->.searchArea;
+(
+{chr(10).join(selectors)}
+);
+out tags center {limit};
+"""
+    url = "https://overpass-api.de/api/interpreter?data=" + quote_plus(query)
+    payload = _json_get(url, timeout_seconds=35)
+    return payload.get("elements", [])
+
+
+def _json_get(url: str, timeout_seconds: int = 20) -> Any:
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "siterisecrm-worker/0.1 (lead discovery; contact: alan@windmanifest.com)",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(request, timeout=timeout_seconds) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _tags_for_niche(niche: str) -> list[tuple[str, str]]:
+    lowered = niche.lower().strip()
+    if lowered in NICHE_TAGS:
+        return NICHE_TAGS[lowered]
+    for key, tags in NICHE_TAGS.items():
+        if key in lowered or lowered in key:
+            return tags
+    raise DiscoveryError(
+        f"No OSM tag mapping for niche '{niche}'. Try Dentists, Beauty Salons, Gyms, Restaurants, Plumbers, Law Firms, or Accountants."
+    )
 
 
 def _demo_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
@@ -148,11 +307,32 @@ def _pitch_note(target: str, website: str | None, issue: str) -> str:
     return f"Pitch angle: existing website can likely be improved. {issue}."
 
 
+def _osm_pitch_note(website: str | None, source_url: str) -> str:
+    if not website:
+        return f"Pitch angle: OpenStreetMap lists this business without a website. Source: {source_url}."
+    return f"Pitch angle: business has a listed website; audit signals can support a redesign pitch. Source: {source_url}."
+
+
 def _stable_random_niche(job: dict[str, Any]) -> str:
     choices = ["Dentists", "Beauty Salons", "Accountants", "Gyms", "Restaurants", "Plumbers", "Law Firms"]
     seed = f"{job.get('job_id')}:{job.get('city')}:{job.get('country')}".encode("utf-8")
     digest = hashlib.sha256(seed).digest()[0]
     return choices[digest % len(choices)]
+
+
+def _category_from_tags(tags: dict[str, Any], fallback: str) -> str:
+    for key in ["amenity", "shop", "craft", "office", "leisure", "sport"]:
+        if tags.get(key):
+            return str(tags[key]).replace("_", " ").title()
+    return fallback
+
+
+def _first_present(tags: dict[str, Any], keys: list[str]) -> str | None:
+    for key in keys:
+        value = _clean(tags.get(key))
+        if value:
+            return value
+    return None
 
 
 def _clean(value: Any) -> str | None:

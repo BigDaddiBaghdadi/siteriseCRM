@@ -52,7 +52,12 @@ For a smoke test that exits quickly:
 python -m audit_worker work --max-cycles 1
 ```
 
-The current discovery provider is `DISCOVERY_PROVIDER=demo`, which generates deterministic demo lead cards for end-to-end CRM testing. Replace it with a real provider adapter later, such as Google Places, SerpAPI, DataForSEO, or Apify.
+Discovery providers:
+
+- `DISCOVERY_PROVIDER=demo` generates deterministic demo lead cards for end-to-end CRM testing.
+- `DISCOVERY_PROVIDER=osm` uses OpenStreetMap/Nominatim/Overpass with no API key. It works best for mapped categories such as Dentists, Beauty Salons, Gyms, Restaurants, Plumbers, Law Firms, and Accountants.
+
+A paid provider adapter can be added later for broader coverage, such as Google Places, SerpAPI, DataForSEO, or Apify.
 
 ## Windows Local Worker
 
