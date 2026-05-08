@@ -5,14 +5,24 @@ use App\Http\Controllers\Admin\AuditReviewController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\LeadDiscoveryController;
+use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
 $prefix = config('app.route_prefix');
 $adminPrefix = $prefix ? "{$prefix}/admin" : 'admin';
 
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', [LoginController::class, 'create'])->name('login');
+    Route::post('login', [LoginController::class, 'store'])->name('login.store');
+});
+
+Route::post('logout', [LoginController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
 Route::redirect($prefix ?: '/', "/{$adminPrefix}");
 
-Route::prefix($adminPrefix)->name('admin.')->group(function (): void {
+Route::prefix($adminPrefix)->middleware('auth')->name('admin.')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::get('lead-discovery', [LeadDiscoveryController::class, 'index'])

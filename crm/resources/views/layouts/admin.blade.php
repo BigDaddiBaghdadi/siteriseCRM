@@ -37,6 +37,9 @@
         }
         .brand { font-size: 17px; font-weight: 700; margin-bottom: 22px; }
         .nav { display: grid; gap: 6px; }
+        .nav form { margin: 14px 0 0; }
+        .nav button { width: 100%; background: transparent; border-color: #3a4a54; color: #dbe5ea; justify-content: flex-start; }
+        .nav button:hover { background: #26333b; }
         .nav a {
             color: #dbe5ea;
             padding: 9px 10px;
@@ -163,6 +166,10 @@
             <a href="{{ route('admin.leads.index') }}" @class(['active' => request()->routeIs('admin.leads.*')])>Leads</a>
             <a href="{{ route('admin.audit-jobs.index') }}" @class(['active' => request()->routeIs('admin.audit-jobs.*')])>Audit Jobs</a>
             <a href="{{ route('admin.audits.index') }}" @class(['active' => request()->routeIs('admin.audits.*')])>Audit Review</a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="secondary">Logout</button>
+            </form>
         </nav>
     </aside>
     <main class="main">
