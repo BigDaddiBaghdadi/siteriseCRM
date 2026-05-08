@@ -19,7 +19,8 @@ class WorkerApiClient:
 
     def next_job(self) -> dict[str, Any] | None:
         try:
-            return self._request("GET", "/api/worker/jobs/next")
+            payload = self._request("GET", "/api/worker/jobs/next")
+            return payload or None
         except WorkerApiError as exc:
             if "HTTP 404" in str(exc) or "HTTP 204" in str(exc):
                 return None
@@ -37,7 +38,8 @@ class WorkerApiClient:
 
     def next_discovery_job(self) -> dict[str, Any] | None:
         try:
-            return self._request("GET", "/api/worker/discovery-jobs/next")
+            payload = self._request("GET", "/api/worker/discovery-jobs/next")
+            return payload or None
         except WorkerApiError as exc:
             if "HTTP 404" in str(exc) or "HTTP 204" in str(exc):
                 return None
