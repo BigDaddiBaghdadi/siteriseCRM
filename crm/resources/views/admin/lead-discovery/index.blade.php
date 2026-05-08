@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Lead Discovery')
-@section('subtitle', 'Find real local business websites, review audits, compare snapshots, and manage leads in one place.')
+@section('subtitle', 'Find real local business websites. Click a card to open the full website review.')
 
 @section('content')
     <section class="panel">
@@ -57,7 +57,7 @@
 
             <div class="form-row-full actions">
                 <button type="submit">Queue discovery</button>
-                <span class="muted">The local worker returns real website leads with snapshots, audit notes, and redesign mockups.</span>
+                <span class="muted">The worker returns real website leads with snapshots, audit notes, and a proposed design.</span>
             </div>
         </form>
     </section>
@@ -93,185 +93,88 @@
     <section>
         <div class="topbar" style="margin-bottom: 10px;">
             <div>
-                <h2 style="margin: 0;">Lead review rows</h2>
-                <div class="muted">Everything needed to review a lead is now inline: contact, audit, snapshots, redesign mockup, approve/reject, and delete.</div>
+                <h2 style="margin: 0;">Lead cards</h2>
+                <div class="muted">Click a card to open the full website breakdown. Use Delete here only when you want to remove it.</div>
             </div>
         </div>
 
-        <div class="lead-review-list">
+        <div class="lead-card-grid">
             @forelse ($leads as $lead)
                 @php($audit = $lead->latestAudit)
-                <article class="lead-review-row">
-                    <div class="lead-review-main">
-                        <div class="lead-review-shot">
-                            @if ($audit?->desktop_screenshot_path)
-                                <img src="{{ $audit->desktop_screenshot_path }}" alt="Screenshot for {{ $lead->business_name }}">
-                            @else
-                                <div class="screenshot-placeholder">Screenshot pending</div>
-                            @endif
-                        </div>
-
-                        <div class="lead-review-summary">
-                            <div class="lead-card-header">
-                                <div>
-                                    <h3>{{ $lead->business_name }}</h3>
-                                    <div class="muted">{{ $lead->category ?: 'Unknown niche' }} · {{ $lead->city ?: 'Unknown city' }}{{ $lead->country ? ', '.$lead->country : '' }}</div>
-                                </div>
-                                <div class="score-stack">
-                                    @if ($audit?->redesign_score !== null)
-                                        <div class="score-pill {{ $audit->redesign_score >= 75 ? 'high' : 'mid' }}">
-                                            {{ $audit->redesign_score }}
-                                            <span>pitch</span>
-                                        </div>
-                                    @endif
-                                    <span class="badge">{{ str_replace('_', ' ', $lead->status) }}</span>
-                                </div>
-                            </div>
-
-                            <div class="contact-lines">
-                                @if ($lead->website_url)
-                                    <a href="{{ $lead->website_url }}" target="_blank" rel="noreferrer">{{ parse_url($lead->website_url, PHP_URL_HOST) ?: $lead->website_url }}</a>
-                                @endif
-                                @if ($lead->phone)<span>{{ $lead->phone }}</span>@endif
-                                @if ($lead->email)<span>{{ $lead->email }}</span>@endif
-                                @if ($lead->source_url)<a href="{{ $lead->source_url }}" target="_blank" rel="noreferrer">Source</a>@endif
-                            </div>
-
-                            @if ($lead->notes)
-                                <div class="muted">{{ $lead->notes }}</div>
-                            @endif
-
-                            @if ($audit)
-                                <div class="score-strip">
-                                    <span><strong>{{ $audit->overall_score ?? 'n/a' }}</strong> overall</span>
-                                    <span><strong>{{ $audit->seo_score ?? 'n/a' }}</strong> SEO</span>
-                                    <span><strong>{{ $audit->mobile_score ?? 'n/a' }}</strong> mobile</span>
-                                    <span><strong>{{ $audit->performance_score ?? 'n/a' }}</strong> speed</span>
-                                </div>
-                            @endif
-
-                            <div class="actions">
-                                @if ($audit)
-                                    <form method="post" action="{{ route('admin.audits.approve', $audit) }}">
-                                        @csrf
-                                        <button type="submit">Approve</button>
-                                    </form>
-                                    <form method="post" action="{{ route('admin.audits.reject', $audit) }}">
-                                        @csrf
-                                        <button type="submit" class="secondary">Reject</button>
-                                    </form>
-                                    @if ($audit->redesign_mockup_path)
-                                        <a class="button secondary" href="{{ $audit->redesign_mockup_path }}" target="_blank" rel="noreferrer">Open mockup</a>
-                                    @endif
-                                @else
-                                    <form method="post" action="{{ route('admin.leads.queue-audit', $lead) }}">
-                                        @csrf
-                                        <button type="submit">Queue audit</button>
-                                    </form>
-                                @endif
-                                <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="danger">Delete</button>
-                                </form>
-                            </div>
-                        </div>
+                @php($reviewUrl = $audit ? route('admin.audits.show', $audit) : route('admin.leads.show', $lead))
+                <article class="lead-card clickable-card" data-href="{{ $reviewUrl }}" tabindex="0" role="link" aria-label="Open review for {{ $lead->business_name }}">
+                    <div class="lead-card-media">
+                        @if ($audit?->desktop_screenshot_path)
+                            <img src="{{ $audit->desktop_screenshot_path }}" alt="Screenshot for {{ $lead->business_name }}">
+                        @else
+                            <div class="screenshot-placeholder">Screenshot pending</div>
+                        @endif
                     </div>
 
-                    @if ($audit)
-                        <div class="lead-review-details">
-                            <div class="detail-panel">
-                                <strong>Pitch insights</strong>
-                                @if ($audit->issues_json)
-                                    <ul class="list">
-                                        @foreach (array_slice($audit->issues_json ?? [], 0, 5) as $issue)
-                                            <li>{{ $issue }}</li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    <div class="muted">No issues submitted.</div>
+                    <div class="lead-card-body">
+                        <div class="lead-card-header">
+                            <div>
+                                <h3>{{ $lead->business_name }}</h3>
+                                <div class="muted">{{ $lead->category ?: 'Unknown niche' }} · {{ $lead->city ?: 'Unknown city' }}{{ $lead->country ? ', '.$lead->country : '' }}</div>
+                            </div>
+                            <div class="score-stack">
+                                @if ($audit?->redesign_score !== null)
+                                    <div class="score-pill {{ $audit->redesign_score >= 75 ? 'high' : 'mid' }}">
+                                        {{ $audit->redesign_score }}
+                                        <span>pitch</span>
+                                    </div>
                                 @endif
-                            </div>
-
-                            <div class="detail-panel">
-                                <strong>What to change</strong>
-                                @if ($audit->recommendations_json)
-                                    <ul class="list">
-                                        @foreach (array_slice($audit->recommendations_json ?? [], 0, 5) as $recommendation)
-                                            <li>{{ $recommendation }}</li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    <div class="muted">No recommendations submitted.</div>
-                                @endif
-                            </div>
-
-                            <div class="detail-panel">
-                                <strong>Contact found</strong>
-                                <div class="mini-json">{{ json_encode($audit->contact_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</div>
-                            </div>
-
-                            <div class="detail-panel">
-                                <strong>Technology</strong>
-                                <div class="mini-json">{{ json_encode($audit->technology_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</div>
+                                <span class="badge">{{ str_replace('_', ' ', $lead->status) }}</span>
                             </div>
                         </div>
 
-                        <details class="inline-review-more">
-                            <summary>Snapshots and generated redesign comparison</summary>
-                            <div class="inline-review-grid">
-                                <div>
-                                    <strong>Current desktop</strong>
-                                    @if ($audit->desktop_screenshot_path)
-                                        <img class="snapshot" src="{{ $audit->desktop_screenshot_path }}" alt="Current desktop screenshot">
-                                    @else
-                                        <div class="muted">Not submitted yet</div>
-                                    @endif
-                                </div>
-                                <div>
-                                    <strong>Current mobile</strong>
-                                    @if ($audit->mobile_screenshot_path)
-                                        <img class="snapshot mobile" src="{{ $audit->mobile_screenshot_path }}" alt="Current mobile screenshot">
-                                    @else
-                                        <div class="muted">Not submitted yet</div>
-                                    @endif
-                                </div>
-                                <div class="inline-review-wide">
-                                    <strong>Generated redesign concept</strong>
-                                    @if ($audit->redesign_concept_json)
-                                        <div class="concept-grid">
-                                            <div>
-                                                <div class="muted">Pitch copy</div>
-                                                <div class="pre">{{ $audit->redesign_concept_json['hero_copy'] ?? 'n/a' }}</div>
-                                            </div>
-                                            <div>
-                                                <div class="muted">Style direction</div>
-                                                <ul class="list">
-                                                    @foreach (($audit->redesign_concept_json['style_notes'] ?? []) as $note)
-                                                        <li>{{ $note }}</li>
-                                                    @endforeach
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div class="muted">No redesign concept submitted yet.</div>
-                                    @endif
-
-                                    @if ($audit->redesign_mockup_path)
-                                        <iframe class="mockup-frame compact" src="{{ $audit->redesign_mockup_path }}"></iframe>
-                                    @endif
-                                </div>
-                            </div>
-                        </details>
-                    @else
-                        <div class="lead-review-details">
-                            <div class="detail-panel muted">Audit pending. Once the worker analyzes this lead, review details will show inline here.</div>
+                        <div class="contact-lines">
+                            @if ($lead->website_url)
+                                <span>{{ parse_url($lead->website_url, PHP_URL_HOST) ?: $lead->website_url }}</span>
+                            @endif
+                            @if ($lead->phone)<span>{{ $lead->phone }}</span>@endif
+                            @if ($lead->email)<span>{{ $lead->email }}</span>@endif
                         </div>
-                    @endif
+
+                        @if ($audit)
+                            <div class="score-strip">
+                                <span><strong>{{ $audit->overall_score ?? 'n/a' }}</strong> overall</span>
+                                <span><strong>{{ $audit->seo_score ?? 'n/a' }}</strong> SEO</span>
+                                <span><strong>{{ $audit->mobile_score ?? 'n/a' }}</strong> mobile</span>
+                            </div>
+                            <div class="insight-block">
+                                <strong>Pitch idea</strong>
+                                <div class="muted">{{ $audit->redesign_concept_json['hero_copy'] ?? ($audit->business_summary ?: 'Open the full review for the pitch breakdown.') }}</div>
+                            </div>
+                        @else
+                            <p class="muted">Audit pending. Open the lead to queue/review details.</p>
+                        @endif
+
+                        <div class="actions card-actions">
+                            <a class="button secondary" href="{{ $reviewUrl }}">Open full review</a>
+                            <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
                 </article>
             @empty
                 <div class="panel muted">No leads yet. Queue a discovery job to start finding opportunities.</div>
             @endforelse
         </div>
     </section>
+
+    <script>
+        document.querySelectorAll('.clickable-card').forEach((card) => {
+            card.addEventListener('click', (event) => {
+                if (event.target.closest('a, button, form, input, select, textarea')) return;
+                window.location.href = card.dataset.href;
+            });
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') window.location.href = card.dataset.href;
+            });
+        });
+    </script>
 @endsection

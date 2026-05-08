@@ -170,10 +170,24 @@
         .inline-review-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; padding: 16px; }
         .inline-review-wide { grid-column: 1 / -1; }
         .concept-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+        .clickable-card { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+        .clickable-card:hover { transform: translateY(-2px); box-shadow: 0 18px 45px rgba(15, 23, 42, .10); border-color: #9ad6cb; }
+        .card-actions { border-top: 1px solid var(--line); padding-top: 10px; }
+        .review-hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .6fr); gap: 24px; align-items: start; }
+        .review-pitch { font-size: 28px; line-height: 1.12; font-weight: 850; letter-spacing: -.04em; margin: 0 0 12px; }
+        .review-contact-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #f8fafc; }
+        .contact-lines.stacked { display: grid; gap: 8px; }
+        .review-snapshot-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+        .review-snapshot { max-height: 760px; }
+        .review-mobile { max-height: 760px; }
+        .section-heading-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; }
+        .reason-panel.bad { border-color: #fecaca; background: #fffafa; }
+        .reason-panel.good { border-color: #bbf7d0; background: #fbfffc; }
+        .review-list li { margin-bottom: 8px; }
         @media (max-width: 900px) {
             .shell { grid-template-columns: 1fr; }
             .sidebar { position: static; }
-            .grid-4, .grid-2, .form-grid, .lead-card-grid, .lead-review-main, .lead-review-details, .inline-review-grid, .concept-grid { grid-template-columns: 1fr; }
+            .grid-4, .grid-2, .form-grid, .lead-card-grid, .lead-review-main, .lead-review-details, .inline-review-grid, .concept-grid, .review-hero, .review-snapshot-grid { grid-template-columns: 1fr; }
             .lead-review-shot { border-right: 0; border-bottom: 1px solid var(--line); }
             .inline-review-wide { grid-column: auto; }
             .topbar { align-items: flex-start; flex-direction: column; }
