@@ -17,6 +17,13 @@ if (-not (Test-Path $VenvPython)) {
 & $VenvPython -m pip install --upgrade pip | Out-Host
 & $VenvPython -m pip install -e $WorkerDir | Out-Host
 
+$BrowserMarker = Join-Path $WorkerDir '.venv\.playwright-chromium-installed'
+if (-not (Test-Path $BrowserMarker)) {
+    Write-Host 'Installing Playwright Chromium for website snapshots...'
+    & $VenvPython -m playwright install chromium | Out-Host
+    New-Item -ItemType File -Force -Path $BrowserMarker | Out-Null
+}
+
 $EnvPath = Join-Path $WorkerDir '.env'
 if (-not (Test-Path $EnvPath)) {
     $TokenPath = Join-Path $env:USERPROFILE '.openclaw\identity\siterise-worker-token.txt'

@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class WorkerDiscoveryController extends Controller
 {
@@ -89,6 +91,7 @@ class WorkerDiscoveryController extends Controller
             'leads.*.audit.contact' => ['nullable', 'array'],
             'leads.*.audit.technology' => ['nullable', 'array'],
             'leads.*.audit.screenshots' => ['nullable', 'array'],
+            'leads.*.audit.redesign' => ['nullable', 'array'],
         ]);
 
         $created = DB::transaction(function () use ($leadDiscoveryJob, $validated): int {
@@ -114,6 +117,10 @@ class WorkerDiscoveryController extends Controller
                     $scores = $auditPayload['scores'] ?? [];
                     $screenshots = $auditPayload['screenshots'] ?? [];
 
+                    $storedScreenshots = $this->storeAuditAssets($screenshots, 'screenshots');
+                    $redesign = $auditPayload['redesign'] ?? [];
+                    $storedRedesign = $this->storeAuditAssets($redesign, 'redesigns');
+
                     Audit::create([
                         'lead_id' => $lead->id,
                         'audit_job_id' => null,
@@ -128,8 +135,10 @@ class WorkerDiscoveryController extends Controller
                         'recommendations_json' => $auditPayload['recommendations'] ?? [],
                         'technology_json' => $auditPayload['technology'] ?? [],
                         'contact_json' => $auditPayload['contact'] ?? [],
-                        'desktop_screenshot_path' => $screenshots['desktop_file'] ?? null,
-                        'mobile_screenshot_path' => $screenshots['mobile_file'] ?? null,
+                        'redesign_concept_json' => $redesign['concept'] ?? [],
+                        'desktop_screenshot_path' => $storedScreenshots['desktop_file'] ?? $screenshots['desktop_file'] ?? null,
+                        'mobile_screenshot_path' => $storedScreenshots['mobile_file'] ?? $screenshots['mobile_file'] ?? null,
+                        'redesign_mockup_path' => $storedRedesign['html_file'] ?? $redesign['html_file'] ?? null,
                     ]);
                 }
 
@@ -176,6 +185,38 @@ class WorkerDiscoveryController extends Controller
         return response()->json([
             'status' => $leadDiscoveryJob->status,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function storeAuditAssets(array $payload, string $directory): array
+    {
+        $stored = [];
+        $publicDirectory = public_path($directory);
+        File::ensureDirectoryExists($publicDirectory);
+
+        foreach ([
+            'desktop_base64' => ['desktop_file', 'png'],
+            'mobile_base64' => ['mobile_file', 'png'],
+            'html_base64' => ['html_file', 'html'],
+        ] as $sourceKey => [$targetKey, $extension]) {
+            if (empty($payload[$sourceKey]) || ! is_string($payload[$sourceKey])) {
+                continue;
+            }
+
+            $raw = preg_replace('/^data:[^;]+;base64,/', '', $payload[$sourceKey]);
+            $bytes = base64_decode($raw, true);
+            if ($bytes === false) {
+                continue;
+            }
+
+            $filename = Str::uuid().'.'.$extension;
+            File::put($publicDirectory.DIRECTORY_SEPARATOR.$filename, $bytes);
+            $stored[$targetKey] = "/{$directory}/{$filename}";
+        }
+
+        return $stored;
     }
 
     private function authenticateWorker(Request $request): ?WorkerToken

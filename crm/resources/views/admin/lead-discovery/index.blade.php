@@ -161,7 +161,15 @@
                             <a class="button secondary" href="{{ route('admin.leads.show', $lead) }}">Open lead</a>
                             @if ($audit)
                                 <a class="button secondary" href="{{ route('admin.audits.show', $audit) }}">Review audit</a>
+                                @if ($audit->redesign_mockup_path)
+                                    <a class="button secondary" href="{{ $audit->redesign_mockup_path }}" target="_blank" rel="noreferrer">Mockup</a>
+                                @endif
                             @endif
+                            <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="danger">Delete</button>
+                            </form>
                         </div>
                     </div>
                 </article>

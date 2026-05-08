@@ -3,7 +3,9 @@ name = "website-audit-worker"
 version = "0.1.0"
 description = "Portable worker for auditing public business websites and submitting results to a CRM API."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "playwright>=1.45",
+]
 
 [project.optional-dependencies]
 browser = [

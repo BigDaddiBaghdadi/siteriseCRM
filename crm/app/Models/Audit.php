@@ -21,8 +21,10 @@ class Audit extends Model
         'recommendations_json',
         'technology_json',
         'contact_json',
+        'redesign_concept_json',
         'desktop_screenshot_path',
         'mobile_screenshot_path',
+        'redesign_mockup_path',
     ];
 
     protected function casts(): array
@@ -32,6 +34,7 @@ class Audit extends Model
             'recommendations_json' => 'array',
             'technology_json' => 'array',
             'contact_json' => 'array',
+            'redesign_concept_json' => 'array',
         ];
     }
 

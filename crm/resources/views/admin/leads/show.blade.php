@@ -9,6 +9,11 @@
         @csrf
         <button type="submit">Queue Audit</button>
     </form>
+    <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="danger">Delete Lead</button>
+    </form>
 @endsection
 
 @section('content')

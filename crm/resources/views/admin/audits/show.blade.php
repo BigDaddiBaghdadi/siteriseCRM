@@ -90,11 +90,55 @@
     </div>
 
     <section class="panel">
-        <h2>Screenshots</h2>
-        <div class="grid grid-2">
-            <div><strong>Desktop</strong><br>{{ $audit->desktop_screenshot_path ?: 'Not submitted yet' }}</div>
-            <div><strong>Mobile</strong><br>{{ $audit->mobile_screenshot_path ?: 'Not submitted yet' }}</div>
+        <h2>Website snapshots</h2>
+        <div class="grid grid-2 compare-grid">
+            <div>
+                <strong>Current desktop</strong>
+                @if ($audit->desktop_screenshot_path)
+                    <img class="snapshot" src="{{ $audit->desktop_screenshot_path }}" alt="Current desktop screenshot">
+                @else
+                    <div class="muted">Not submitted yet</div>
+                @endif
+            </div>
+            <div>
+                <strong>Current mobile</strong>
+                @if ($audit->mobile_screenshot_path)
+                    <img class="snapshot mobile" src="{{ $audit->mobile_screenshot_path }}" alt="Current mobile screenshot">
+                @else
+                    <div class="muted">Not submitted yet</div>
+                @endif
+            </div>
         </div>
+    </section>
+
+    <section class="panel">
+        <h2>Generated redesign concept</h2>
+        @if ($audit->redesign_concept_json)
+            <div class="grid grid-2">
+                <div>
+                    <strong>Style direction</strong>
+                    <ul class="list">
+                        @foreach (($audit->redesign_concept_json['style_notes'] ?? []) as $note)
+                            <li>{{ $note }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                <div>
+                    <strong>Pitch copy</strong>
+                    <div class="pre">{{ $audit->redesign_concept_json['hero_copy'] ?? 'n/a' }}</div>
+                </div>
+            </div>
+        @else
+            <div class="muted">No redesign concept submitted yet.</div>
+        @endif
+
+        @if ($audit->redesign_mockup_path)
+            <div style="margin-top: 14px;">
+                <strong>Mock front page</strong><br>
+                <a class="button secondary" href="{{ $audit->redesign_mockup_path }}" target="_blank" rel="noreferrer">Open generated mockup</a>
+                <iframe class="mockup-frame" src="{{ $audit->redesign_mockup_path }}"></iframe>
+            </div>
+        @endif
     </section>
 @endsection
 

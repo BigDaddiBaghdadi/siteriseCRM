@@ -22,9 +22,7 @@ class LeadDiscoveryController extends Controller
                 ->get(),
             'limits' => LeadDiscoveryJob::RESULT_LIMITS,
             'targets' => [
-                LeadDiscoveryJob::TARGET_NO_WEBSITE => 'Find businesses without a website',
-                LeadDiscoveryJob::TARGET_NEEDS_REDESIGN => 'Find websites that need redesign/rebuild',
-                LeadDiscoveryJob::TARGET_BOTH => 'Find both opportunity types',
+                LeadDiscoveryJob::TARGET_NEEDS_REDESIGN => 'Find real websites that need redesign/rebuild',
             ],
             'suggestedNiches' => [
                 'Dentists',
@@ -50,9 +48,7 @@ class LeadDiscoveryController extends Controller
             'country' => ['nullable', 'string', 'max:120'],
             'result_limit' => ['required', 'integer', Rule::in(LeadDiscoveryJob::RESULT_LIMITS)],
             'target' => ['required', Rule::in([
-                LeadDiscoveryJob::TARGET_NO_WEBSITE,
                 LeadDiscoveryJob::TARGET_NEEDS_REDESIGN,
-                LeadDiscoveryJob::TARGET_BOTH,
             ])],
         ]);
 

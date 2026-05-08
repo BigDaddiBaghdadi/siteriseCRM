@@ -148,6 +148,9 @@
         .score-pill span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
         .contact-lines { display: flex; flex-wrap: wrap; gap: 8px 12px; color: var(--muted); }
         .insight-block { border-top: 1px solid var(--line); padding-top: 10px; }
+        .snapshot { display: block; width: 100%; max-height: 520px; object-fit: cover; object-position: top; border: 1px solid var(--line); border-radius: 8px; margin-top: 8px; background: #eef2f6; }
+        .snapshot.mobile { max-width: 260px; }
+        .mockup-frame { width: 100%; min-height: 520px; border: 1px solid var(--line); border-radius: 8px; margin-top: 10px; background: #fff; }
         @media (max-width: 900px) {
             .shell { grid-template-columns: 1fr; }
             .sidebar { position: static; }

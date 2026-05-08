@@ -58,6 +58,11 @@
                                 @csrf
                                 <button type="submit">Queue</button>
                             </form>
+                            <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="danger">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 @empty
