@@ -38,7 +38,36 @@ python -m audit_worker run-once
 python -m audit_worker run-discovery-once
 ```
 
+## Run Continuously
+
+```bash
+python -m audit_worker work
+```
+
+The continuous worker checks Lead Discovery first, then regular Audit jobs. If no work is available, it sleeps for `POLL_INTERVAL_SECONDS`.
+
+For a smoke test that exits quickly:
+
+```bash
+python -m audit_worker work --max-cycles 1
+```
+
 The current discovery provider is `DISCOVERY_PROVIDER=demo`, which generates deterministic demo lead cards for end-to-end CRM testing. Replace it with a real provider adapter later, such as Google Places, SerpAPI, DataForSEO, or Apify.
+
+## Windows Local Worker
+
+From the repo root:
+
+```powershell
+.\scripts\run-local-worker.ps1 -MaxCycles 1
+.\scripts\run-local-worker.ps1
+```
+
+To install it as a logon scheduled task:
+
+```powershell
+.\scripts\install-local-worker-task.ps1
+```
 
 ## Local URL Audit Smoke Test
 
