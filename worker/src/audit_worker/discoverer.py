@@ -96,7 +96,7 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
     limit = max(1, min(int(job.get("result_limit") or 15), 50))
     tags = _tags_for_niche(niche)
     area_id = _nominatim_area_id(city=city, country=country)
-    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 4)
+    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 10)
 
     leads: list[dict[str, Any]] = []
     seen_names: set[str] = set()
@@ -136,8 +136,10 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
             audit = audit_url(website, timeout_seconds=12)
             audit.update(capture_snapshots_and_redesign(website, business_name, audit, timeout_seconds=20))
             lead["audit"] = audit
-        except Exception as exc:
-            lead["notes"] += f" Website audit/snapshot failed during discovery: {exc}."
+        except Exception:
+            # Keep generated leads high quality: real website plus audit, snapshots,
+            # and redesign mockup. If a site cannot be audited/captured, skip it.
+            continue
 
         leads.append(lead)
         if len(leads) >= limit:
