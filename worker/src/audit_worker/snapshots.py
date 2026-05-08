@@ -27,20 +27,20 @@ def capture_snapshots_and_redesign(url: str, business_name: str, audit: dict[str
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            page = browser.new_page(viewport={"width": 1440, "height": 1200}, device_scale_factor=1)
+            page = browser.new_page(viewport={"width": 1024, "height": 720}, device_scale_factor=1)
             page.goto(url, wait_until="networkidle", timeout=timeout_seconds * 1000)
             result.setdefault("screenshots", {})["desktop_jpeg_base64"] = base64.b64encode(
-                page.screenshot(full_page=False, type="jpeg", quality=62)
+                page.screenshot(full_page=False, type="jpeg", quality=38)
             ).decode("ascii")
 
             mobile = browser.new_page(
-                viewport={"width": 390, "height": 900},
+                viewport={"width": 390, "height": 720},
                 device_scale_factor=2,
                 is_mobile=True,
             )
             mobile.goto(url, wait_until="networkidle", timeout=timeout_seconds * 1000)
             result.setdefault("screenshots", {})["mobile_jpeg_base64"] = base64.b64encode(
-                mobile.screenshot(full_page=False, type="jpeg", quality=62)
+                mobile.screenshot(full_page=False, type="jpeg", quality=38)
             ).decode("ascii")
             browser.close()
     except Exception as exc:
