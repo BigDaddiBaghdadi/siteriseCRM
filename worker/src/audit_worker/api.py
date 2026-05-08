@@ -35,6 +35,24 @@ class WorkerApiClient:
             {"error": error, "retryable": retryable},
         )
 
+    def next_discovery_job(self) -> dict[str, Any] | None:
+        try:
+            return self._request("GET", "/api/worker/discovery-jobs/next")
+        except WorkerApiError as exc:
+            if "HTTP 404" in str(exc) or "HTTP 204" in str(exc):
+                return None
+            raise
+
+    def submit_discovery_result(self, job_id: str, leads: list[dict[str, Any]]) -> dict[str, Any]:
+        return self._request("POST", f"/api/worker/discovery-jobs/{job_id}/result", {"leads": leads})
+
+    def submit_discovery_failure(self, job_id: str, error: str, retryable: bool = True) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/api/worker/discovery-jobs/{job_id}/fail",
+            {"error": error, "retryable": retryable},
+        )
+
     def _request(
         self,
         method: str,

@@ -12,6 +12,7 @@ class WorkerConfig:
     max_concurrency: int
     job_timeout_seconds: int
     screenshot_dir: str
+    discovery_provider: str
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -22,6 +23,7 @@ class WorkerConfig:
             max_concurrency=int(os.getenv("MAX_CONCURRENCY", "1")),
             job_timeout_seconds=int(os.getenv("JOB_TIMEOUT_SECONDS", "60")),
             screenshot_dir=os.getenv("SCREENSHOT_DIR", "./storage/screenshots"),
+            discovery_provider=os.getenv("DISCOVERY_PROVIDER", "demo"),
         )
 
 
