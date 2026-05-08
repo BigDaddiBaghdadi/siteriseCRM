@@ -20,6 +20,12 @@ PLAN.md    Product and architecture plan
 - Python worker scaffold can perform a first-pass HTML audit and submit results through the planned API.
 - Worker has no direct database access and no dependency on any public website.
 
+## Setup Docs
+
+- `docs/server-setup.md` — CRM server/database setup
+- `docs/local-development.md` — Windows/local development and portable worker setup
+- `docs/worker-deployment.md` — worker deployment notes
+
 ## Validation
 
 ```bash
