@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuditJobController;
 use App\Http\Controllers\Admin\AuditReviewController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LeadController;
+use App\Http\Controllers\Admin\LeadDiscoveryController;
 use Illuminate\Support\Facades\Route;
 
 $prefix = config('app.route_prefix');
@@ -13,6 +14,11 @@ Route::redirect($prefix ?: '/', "/{$adminPrefix}");
 
 Route::prefix($adminPrefix)->name('admin.')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::get('lead-discovery', [LeadDiscoveryController::class, 'index'])
+        ->name('lead-discovery.index');
+    Route::post('lead-discovery', [LeadDiscoveryController::class, 'store'])
+        ->name('lead-discovery.store');
 
     Route::resource('leads', LeadController::class);
     Route::post('leads/{lead}/queue-audit', [LeadController::class, 'queueAudit'])

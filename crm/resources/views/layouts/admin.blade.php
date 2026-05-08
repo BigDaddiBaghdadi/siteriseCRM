@@ -132,10 +132,23 @@
             white-space: pre-wrap;
         }
         .pagination { margin-top: 14px; }
+        .lead-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .lead-card { overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+        .lead-card-media { background: #e9edf3; min-height: 170px; display: grid; place-items: center; }
+        .lead-card-media img { display: block; width: 100%; height: 220px; object-fit: cover; object-position: top; }
+        .screenshot-placeholder { color: var(--muted); font-weight: 700; }
+        .lead-card-body { padding: 15px; display: grid; gap: 12px; }
+        .lead-card-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+        .lead-card h3 { margin: 0 0 3px; font-size: 17px; }
+        .score-pill { min-width: 58px; border-radius: 10px; padding: 7px; text-align: center; font-size: 22px; font-weight: 800; background: #fef3c7; color: #92400e; }
+        .score-pill.high { background: #fee2e2; color: #991b1b; }
+        .score-pill span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+        .contact-lines { display: flex; flex-wrap: wrap; gap: 8px 12px; color: var(--muted); }
+        .insight-block { border-top: 1px solid var(--line); padding-top: 10px; }
         @media (max-width: 900px) {
             .shell { grid-template-columns: 1fr; }
             .sidebar { position: static; }
-            .grid-4, .grid-2, .form-grid { grid-template-columns: 1fr; }
+            .grid-4, .grid-2, .form-grid, .lead-card-grid { grid-template-columns: 1fr; }
             .topbar { align-items: flex-start; flex-direction: column; }
         }
     </style>
@@ -146,6 +159,7 @@
         <div class="brand">Website Audit CRM</div>
         <nav class="nav">
             <a href="{{ route('admin.dashboard') }}" @class(['active' => request()->routeIs('admin.dashboard')])>Dashboard</a>
+            <a href="{{ route('admin.lead-discovery.index') }}" @class(['active' => request()->routeIs('admin.lead-discovery.*')])>Lead Discovery</a>
             <a href="{{ route('admin.leads.index') }}" @class(['active' => request()->routeIs('admin.leads.*')])>Leads</a>
             <a href="{{ route('admin.audit-jobs.index') }}" @class(['active' => request()->routeIs('admin.audit-jobs.*')])>Audit Jobs</a>
             <a href="{{ route('admin.audits.index') }}" @class(['active' => request()->routeIs('admin.audits.*')])>Audit Review</a>

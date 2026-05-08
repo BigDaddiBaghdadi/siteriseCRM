@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lead extends Model
 {
@@ -40,6 +41,11 @@ class Lead extends Model
     public function audits(): HasMany
     {
         return $this->hasMany(Audit::class);
+    }
+
+    public function latestAudit(): HasOne
+    {
+        return $this->hasOne(Audit::class)->latestOfMany();
     }
 }
 
