@@ -13,7 +13,7 @@ class QueueDailyLeadDiscovery extends Command
         {--niche=Dentists : Niche to search}
         {--limit=5 : Number of leads to find}';
 
-    protected $description = 'Queue a small daily lead discovery job for real websites needing redesign.';
+    protected $description = 'Queue a small manual lead discovery job for real websites needing redesign.';
 
     public function handle(): int
     {
@@ -32,12 +32,12 @@ class QueueDailyLeadDiscovery extends Command
             'target' => LeadDiscoveryJob::TARGET_NEEDS_REDESIGN,
             'status' => LeadDiscoveryJob::STATUS_QUEUED,
             'metadata_json' => [
-                'queued_by' => 'daily_command',
+                'queued_by' => 'manual_command',
                 'real_websites_only' => true,
             ],
         ]);
 
-        $this->info("Queued daily lead discovery job #{$job->id}.");
+        $this->info("Queued manual lead discovery job #{$job->id}.");
 
         return self::SUCCESS;
     }

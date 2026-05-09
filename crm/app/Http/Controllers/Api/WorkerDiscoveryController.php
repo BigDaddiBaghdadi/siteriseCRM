@@ -96,16 +96,42 @@ class WorkerDiscoveryController extends Controller
 
         $created = DB::transaction(function () use ($leadDiscoveryJob, $validated): int {
             $created = 0;
+            $seen = [];
 
             foreach ($validated['leads'] as $item) {
+                $websiteUrl = $this->normalizeUrl($item['website_url'] ?? null);
+                $sourceUrl = $this->normalizeUrl($item['source_url'] ?? null);
+                $signature = $this->duplicateSignature(
+                    $item['business_name'],
+                    $item['city'] ?? $leadDiscoveryJob->city,
+                    $item['country'] ?? $leadDiscoveryJob->country,
+                    $websiteUrl,
+                    $sourceUrl,
+                );
+
+                if (
+                    isset($seen[$signature])
+                    || $this->leadAlreadyExists(
+                        $item['business_name'],
+                        $item['city'] ?? $leadDiscoveryJob->city,
+                        $item['country'] ?? $leadDiscoveryJob->country,
+                        $websiteUrl,
+                        $sourceUrl,
+                    )
+                ) {
+                    continue;
+                }
+
+                $seen[$signature] = true;
+
                 $lead = Lead::create([
                     'business_name' => $item['business_name'],
                     'category' => $item['category'] ?? $leadDiscoveryJob->niche,
                     'city' => $item['city'] ?? $leadDiscoveryJob->city,
                     'country' => $item['country'] ?? $leadDiscoveryJob->country,
-                    'website_url' => $item['website_url'] ?? null,
+                    'website_url' => $websiteUrl,
                     'source' => $item['source'] ?? 'lead_discovery',
-                    'source_url' => $item['source_url'] ?? null,
+                    'source_url' => $sourceUrl,
                     'phone' => $item['phone'] ?? null,
                     'email' => $item['email'] ?? null,
                     'status' => isset($item['audit']) ? Lead::STATUS_NEEDS_REVIEW : Lead::STATUS_NEW,
@@ -159,6 +185,96 @@ class WorkerDiscoveryController extends Controller
             'status' => LeadDiscoveryJob::STATUS_COMPLETED,
             'leads_created' => $created,
         ], 201);
+    }
+
+    private function leadAlreadyExists(string $businessName, ?string $city, ?string $country, ?string $websiteUrl, ?string $sourceUrl): bool
+    {
+        return Lead::query()
+            ->where(function ($query) use ($businessName, $city, $country, $websiteUrl, $sourceUrl): void {
+                if ($websiteUrl) {
+                    $query->orWhereIn(DB::raw('LOWER(website_url)'), $this->urlVariants($websiteUrl));
+                }
+
+                if ($sourceUrl) {
+                    $query->orWhereIn(DB::raw('LOWER(source_url)'), $this->urlVariants($sourceUrl));
+                }
+
+                $query->orWhere(function ($query) use ($businessName, $city, $country): void {
+                    $query->whereRaw('LOWER(business_name) = ?', [mb_strtolower(trim($businessName))])
+                        ->whereRaw("LOWER(COALESCE(city, '')) = ?", [mb_strtolower(trim((string) $city))])
+                        ->whereRaw("LOWER(COALESCE(country, '')) = ?", [mb_strtolower(trim((string) $country))]);
+                });
+            })
+            ->exists();
+    }
+
+    private function duplicateSignature(string $businessName, ?string $city, ?string $country, ?string $websiteUrl, ?string $sourceUrl): string
+    {
+        if ($websiteUrl) {
+            return 'website:'.$this->urlKey($websiteUrl);
+        }
+
+        if ($sourceUrl) {
+            return 'source:'.$this->urlKey($sourceUrl);
+        }
+
+        return 'business:'.implode('|', [
+            mb_strtolower(trim($businessName)),
+            mb_strtolower(trim((string) $city)),
+            mb_strtolower(trim((string) $country)),
+        ]);
+    }
+
+    private function normalizeUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return null;
+        }
+
+        if (! preg_match('#^https?://#i', $url)) {
+            $url = 'https://'.$url;
+        }
+
+        $parts = parse_url($url);
+        if (! is_array($parts) || empty($parts['host'])) {
+            return rtrim($url, '/');
+        }
+
+        $scheme = mb_strtolower($parts['scheme'] ?? 'https');
+        $host = mb_strtolower($parts['host']);
+        $path = isset($parts['path']) ? '/'.ltrim($parts['path'], '/') : '';
+        $path = $path === '/' ? '' : rtrim($path, '/');
+        $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+
+        return "{$scheme}://{$host}{$path}{$query}";
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function urlVariants(string $url): array
+    {
+        $lower = mb_strtolower(rtrim($url, '/'));
+        $variants = [$lower, $lower.'/'];
+
+        foreach (['https://', 'http://'] as $scheme) {
+            if (str_starts_with($lower, $scheme)) {
+                $otherScheme = $scheme === 'https://' ? 'http://' : 'https://';
+                $withoutScheme = substr($lower, strlen($scheme));
+                $variants[] = $otherScheme.$withoutScheme;
+                $variants[] = $otherScheme.$withoutScheme.'/';
+            }
+        }
+
+        return array_values(array_unique($variants));
+    }
+
+    private function urlKey(string $url): string
+    {
+        $key = mb_strtolower(rtrim($url, '/'));
+
+        return preg_replace('#^https?://(www\.)?#', '', $key) ?? $key;
     }
 
     public function fail(Request $request, LeadDiscoveryJob $leadDiscoveryJob): JsonResponse

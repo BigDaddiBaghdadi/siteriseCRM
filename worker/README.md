@@ -74,16 +74,16 @@ To install it as a logon scheduled task:
 .\scripts\install-local-worker-task.ps1
 ```
 
-To queue and process 5 real website leads once:
+To queue and process 5 real website leads manually/once:
 
 ```powershell
 .\scripts\run-daily-discovery.ps1 -City Sofia -Country Bulgaria -Niche Dentists -Limit 5
 ```
 
-To schedule that daily:
+Automatic daily lead generation is intentionally disabled. If an old scheduled task exists, this disables it:
 
 ```powershell
-.\scripts\install-daily-discovery-task.ps1 -At 09:00 -City Sofia -Country Bulgaria -Niche Dentists -Limit 5
+.\scripts\install-daily-discovery-task.ps1
 ```
 
 ## Local URL Audit Smoke Test
