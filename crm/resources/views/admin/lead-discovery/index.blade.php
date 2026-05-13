@@ -8,7 +8,7 @@
         <h2>Start a discovery job</h2>
         <form method="POST" action="{{ route('admin.lead-discovery.store') }}" class="discovery-form">
             @csrf
-            <input type="hidden" id="niche_mode" name="niche_mode" value="{{ old('niche_mode', 'specific') }}">
+            <input type="hidden" id="niche_mode" name="niche_mode" value="specific">
 
             <div class="form-row-full">
                 <label for="niche">Niche</label>
@@ -16,7 +16,7 @@
                     <input id="niche" name="niche" list="suggested-niches" value="{{ old('niche') }}" placeholder="Dentists, gyms, salons...">
                     <button type="button" class="secondary" id="random-niche-button">Random niche</button>
                 </div>
-                <div class="muted" id="niche-helper">Choose a niche or let the job pick one automatically.</div>
+                <div class="muted" id="niche-helper">Choose a niche or use the button to fill this field with a random one.</div>
                 <datalist id="suggested-niches">
                     @foreach ($suggestedNiches as $niche)
                         <option value="{{ $niche }}"></option>
@@ -200,26 +200,22 @@
     </section>
 
     <script>
-        const nicheMode = document.getElementById('niche_mode');
         const nicheInput = document.getElementById('niche');
         const helper = document.getElementById('niche-helper');
         const randomButton = document.getElementById('random-niche-button');
+        const suggestedNiches = @json($suggestedNiches);
 
-        function applyNicheMode() {
-            const random = nicheMode.value === 'random';
-            nicheInput.disabled = random;
-            nicheInput.required = !random;
-            randomButton.textContent = random ? 'Use specific niche' : 'Random niche';
-            helper.textContent = random
-                ? 'Random niche is enabled. The worker will choose a local-service niche for this city.'
-                : 'Choose a niche or let the job pick one automatically.';
+        function pickRandomNiche() {
+            const current = nicheInput.value.trim();
+            const choices = suggestedNiches.filter((niche) => niche !== current);
+            const pool = choices.length ? choices : suggestedNiches;
+            const next = pool[Math.floor(Math.random() * pool.length)];
+
+            nicheInput.value = next;
+            nicheInput.focus();
+            helper.textContent = `Random niche selected: ${next}`;
         }
 
-        randomButton.addEventListener('click', () => {
-            nicheMode.value = nicheMode.value === 'random' ? 'specific' : 'random';
-            applyNicheMode();
-        });
-
-        applyNicheMode();
+        randomButton.addEventListener('click', pickRandomNiche);
     </script>
 @endsection
