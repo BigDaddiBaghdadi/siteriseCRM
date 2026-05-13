@@ -4,9 +4,11 @@
 @section('subtitle', 'Queue focused discovery jobs and review returned leads one by one.')
 
 @section('content')
+    @php($activeDiscoveryJob = $jobs->first(fn ($job) => in_array($job->status, [\App\Models\LeadDiscoveryJob::STATUS_QUEUED, \App\Models\LeadDiscoveryJob::STATUS_RUNNING], true)))
+
     <section class="panel">
         <h2>Start a discovery job</h2>
-        <form method="POST" action="{{ route('admin.lead-discovery.store') }}" class="discovery-form">
+        <form method="POST" action="{{ route('admin.lead-discovery.store') }}" class="discovery-form" id="discovery-form">
             @csrf
             <input type="hidden" id="niche_mode" name="niche_mode" value="specific">
 
@@ -72,8 +74,26 @@
             </fieldset>
 
             <div class="form-row-full actions">
-                <button type="submit">Queue discovery</button>
+                <button type="submit" id="queue-discovery-button">Queue discovery</button>
                 <span class="muted">The worker will return lead cards with contact details, screenshots when available, and review notes.</span>
+            </div>
+
+            <div class="form-row-full discovery-progress {{ $activeDiscoveryJob ? 'is-active' : '' }}" id="discovery-progress" aria-live="polite">
+                <div class="progress-header">
+                    <strong id="discovery-progress-title">
+                        {{ $activeDiscoveryJob ? 'Discovery job '.str_replace('_', ' ', $activeDiscoveryJob->status) : 'Queueing discovery job' }}
+                    </strong>
+                    <span class="muted" id="discovery-progress-copy">
+                        @if ($activeDiscoveryJob)
+                            {{ $activeDiscoveryJob->nicheLabel() }} in {{ $activeDiscoveryJob->city }}{{ $activeDiscoveryJob->country ? ', '.$activeDiscoveryJob->country : '' }}
+                        @else
+                            Preparing the request for the worker.
+                        @endif
+                    </span>
+                </div>
+                <div class="progress-track" role="progressbar" aria-label="Discovery progress">
+                    <span></span>
+                </div>
             </div>
         </form>
     </section>
@@ -211,6 +231,11 @@
         const nicheInput = document.getElementById('niche');
         const helper = document.getElementById('niche-helper');
         const randomButton = document.getElementById('random-niche-button');
+        const discoveryForm = document.getElementById('discovery-form');
+        const queueButton = document.getElementById('queue-discovery-button');
+        const progress = document.getElementById('discovery-progress');
+        const progressTitle = document.getElementById('discovery-progress-title');
+        const progressCopy = document.getElementById('discovery-progress-copy');
         const suggestedNiches = @json($suggestedNiches);
 
         function pickRandomNiche() {
@@ -225,5 +250,13 @@
         }
 
         randomButton.addEventListener('click', pickRandomNiche);
+
+        discoveryForm.addEventListener('submit', () => {
+            progress.classList.add('is-active');
+            progressTitle.textContent = 'Discovery job queued';
+            progressCopy.textContent = 'Waiting for the worker to pick it up.';
+            queueButton.disabled = true;
+            queueButton.textContent = 'Queueing...';
+        });
     </script>
 @endsection

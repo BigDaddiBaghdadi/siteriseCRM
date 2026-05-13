@@ -135,6 +135,35 @@
         }
         .choice-card:has(input:checked) { border-color: var(--accent); background: #ecfdf8; }
         .choice-card input { width: auto; }
+        .discovery-progress {
+            display: none;
+            border: 1px solid #9ad6cb;
+            background: #f0fdfa;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .discovery-progress.is-active { display: grid; gap: 9px; }
+        .progress-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .progress-track {
+            position: relative;
+            overflow: hidden;
+            height: 9px;
+            border-radius: 999px;
+            background: #cdeee8;
+        }
+        .progress-track span {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 42%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--accent), #38bdf8);
+            animation: discovery-progress 1.35s ease-in-out infinite;
+        }
+        @keyframes discovery-progress {
+            0% { transform: translateX(-105%); }
+            55% { transform: translateX(85%); }
+            100% { transform: translateX(245%); }
+        }
         .errors {
             border: 1px solid #fecaca;
             background: #fff1f2;
