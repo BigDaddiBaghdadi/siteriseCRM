@@ -80,8 +80,8 @@ def _redesign_concept(url: str, business_name: str, audit: dict[str, Any]) -> di
 
     return {
         "language": "en",
-        "hero_copy": f"A clearer, faster website for {business_name} that turns local visitors into calls and bookings.",
-        "subcopy": summary or f"{business_name} can benefit from a clearer, conversion-focused website.",
+        "hero_copy": "A clearer, faster website that turns local visitors into calls and bookings.",
+        "subcopy": summary or "This business can benefit from a clearer, conversion-focused website.",
         "style_notes": [
             "Keep recognizable brand cues while making the first screen cleaner and more conversion-focused.",
             "Use a high-contrast hero, clear service cards, trust proof, and sticky contact actions.",
