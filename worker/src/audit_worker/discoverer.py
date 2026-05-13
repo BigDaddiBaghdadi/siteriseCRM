@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus, urlencode
 from urllib.request import Request, urlopen
 
@@ -109,6 +110,12 @@ RANDOM_NICHES = [
     "Travel agencies",
     "Veterinary clinics",
     "Yoga studios",
+]
+
+OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
 ]
 
 NICHE_TAGS: dict[str, list[tuple[str, str]]] = {
@@ -225,7 +232,7 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
     limit = max(1, min(int(job.get("result_limit") or 15), 50))
     tags = _tags_for_niche(niche)
     area_id = _nominatim_area_id(city=city, country=country)
-    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 10)
+    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 10, target=target)
 
     leads: list[dict[str, Any]] = []
     seen_names: set[str] = set()
@@ -300,16 +307,41 @@ def _nominatim_area_id(city: str, country: str | None) -> int:
     raise DiscoveryError(f"Nominatim returned unsupported OSM type for area lookup: {osm_type}")
 
 
-def _overpass_businesses(area_id: int, tags: list[tuple[str, str]], limit: int) -> list[dict[str, Any]]:
+def _overpass_businesses(area_id: int, tags: list[tuple[str, str]], limit: int, target: str) -> list[dict[str, Any]]:
     selectors = []
     for key, value in tags:
         safe_key = key.replace('"', '')
         safe_value = value.replace('"', '')
+        base_filters = f'["{safe_key}"="{safe_value}"]["name"]'
+
+        if target == "needs_redesign":
+            for website_key in ["website", "contact:website", "url"]:
+                website_filter = f'["{website_key}"]'
+                selectors.extend(
+                    [
+                        f"node{base_filters}{website_filter}(area.searchArea);",
+                        f"way{base_filters}{website_filter}(area.searchArea);",
+                        f"relation{base_filters}{website_filter}(area.searchArea);",
+                    ]
+                )
+            continue
+
+        if target == "no_website":
+            no_website_filter = '[!"website"][!"contact:website"][!"url"]'
+            selectors.extend(
+                [
+                    f"node{base_filters}{no_website_filter}(area.searchArea);",
+                    f"way{base_filters}{no_website_filter}(area.searchArea);",
+                    f"relation{base_filters}{no_website_filter}(area.searchArea);",
+                ]
+            )
+            continue
+
         selectors.extend(
             [
-                f'node["{safe_key}"="{safe_value}"]["name"](area.searchArea);',
-                f'way["{safe_key}"="{safe_value}"]["name"](area.searchArea);',
-                f'relation["{safe_key}"="{safe_value}"]["name"](area.searchArea);',
+                f"node{base_filters}(area.searchArea);",
+                f"way{base_filters}(area.searchArea);",
+                f"relation{base_filters}(area.searchArea);",
             ]
         )
 
@@ -321,9 +353,16 @@ area({area_id})->.searchArea;
 );
 out tags center {limit};
 """
-    url = "https://overpass-api.de/api/interpreter?data=" + quote_plus(query)
-    payload = _json_get(url, timeout_seconds=35)
-    return payload.get("elements", [])
+    failures = []
+    for endpoint in OVERPASS_ENDPOINTS:
+        url = endpoint + "?data=" + quote_plus(query)
+        try:
+            payload = _json_get(url, timeout_seconds=35)
+            return payload.get("elements", [])
+        except (HTTPError, URLError, TimeoutError) as exc:
+            failures.append(f"{endpoint}: {exc}")
+
+    raise DiscoveryError("Overpass lookup failed on all endpoints. " + " | ".join(failures))
 
 
 def _json_get(url: str, timeout_seconds: int = 20) -> Any:
