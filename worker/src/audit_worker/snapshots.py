@@ -24,26 +24,50 @@ def capture_snapshots_and_redesign(url: str, business_name: str, audit: dict[str
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            page = browser.new_page(viewport={"width": 1024, "height": 720}, device_scale_factor=1)
-            page.goto(url, wait_until="networkidle", timeout=timeout_seconds * 1000)
-            result.setdefault("screenshots", {})["desktop_jpeg_base64"] = base64.b64encode(
-                page.screenshot(full_page=False, type="jpeg", quality=38)
-            ).decode("ascii")
+            try:
+                page = browser.new_page(viewport={"width": 1024, "height": 720}, device_scale_factor=1)
+                _capture_page_jpeg(
+                    page=page,
+                    url=url,
+                    timeout_seconds=timeout_seconds,
+                    target=result.setdefault("screenshots", {}),
+                    key="desktop_jpeg_base64",
+                )
 
-            mobile = browser.new_page(
-                viewport={"width": 390, "height": 720},
-                device_scale_factor=2,
-                is_mobile=True,
-            )
-            mobile.goto(url, wait_until="networkidle", timeout=timeout_seconds * 1000)
-            result.setdefault("screenshots", {})["mobile_jpeg_base64"] = base64.b64encode(
-                mobile.screenshot(full_page=False, type="jpeg", quality=38)
-            ).decode("ascii")
-            browser.close()
+                mobile = browser.new_page(
+                    viewport={"width": 390, "height": 720},
+                    device_scale_factor=2,
+                    is_mobile=True,
+                )
+                _capture_page_jpeg(
+                    page=mobile,
+                    url=url,
+                    timeout_seconds=timeout_seconds,
+                    target=result.setdefault("screenshots", {}),
+                    key="mobile_jpeg_base64",
+                )
+            finally:
+                browser.close()
     except Exception as exc:
         result.setdefault("screenshots", {})["capture_error"] = str(exc)
 
     return result
+
+
+def _capture_page_jpeg(page: Any, url: str, timeout_seconds: int, target: dict[str, Any], key: str) -> None:
+    try:
+        page.goto(url, wait_until="domcontentloaded", timeout=timeout_seconds * 1000)
+        page.wait_for_load_state("load", timeout=5_000)
+    except Exception as exc:
+        target[f"{key}_load_warning"] = str(exc)
+
+    try:
+        page.wait_for_timeout(1_200)
+        target[key] = base64.b64encode(
+            page.screenshot(full_page=False, type="jpeg", quality=38)
+        ).decode("ascii")
+    except Exception as exc:
+        target[f"{key}_error"] = str(exc)
 
 
 def _detect_language(business_name: str, audit: dict[str, Any]) -> str:

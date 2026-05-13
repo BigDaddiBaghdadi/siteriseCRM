@@ -9,6 +9,7 @@ from .api import WorkerApiClient
 from .auditor import audit_url
 from .config import WorkerConfig
 from .discoverer import discover_leads
+from .snapshots import capture_snapshots_and_redesign
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -115,9 +116,11 @@ def _process_audit_job(client: WorkerApiClient, config: WorkerConfig) -> bool:
 
     job_id = str(job["job_id"])
     url = str(job["website_url"])
+    business_name = str(job.get("business_name") or url)
 
     try:
         result = audit_url(url, timeout_seconds=config.job_timeout_seconds)
+        result.update(capture_snapshots_and_redesign(url, business_name, result, timeout_seconds=20))
         result["lead_id"] = job["lead_id"]
         client.submit_result(job_id, result)
         print(f"Submitted audit result for job {job_id}.")

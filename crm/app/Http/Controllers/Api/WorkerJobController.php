@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class WorkerJobController extends Controller
 {
@@ -91,6 +93,14 @@ class WorkerJobController extends Controller
             'screenshots' => ['nullable', 'array'],
             'screenshots.desktop_file' => ['nullable', 'string'],
             'screenshots.mobile_file' => ['nullable', 'string'],
+            'screenshots.desktop_base64' => ['nullable', 'string'],
+            'screenshots.mobile_base64' => ['nullable', 'string'],
+            'screenshots.desktop_jpeg_base64' => ['nullable', 'string'],
+            'screenshots.mobile_jpeg_base64' => ['nullable', 'string'],
+            'redesign' => ['nullable', 'array'],
+            'redesign.concept' => ['nullable', 'array'],
+            'redesign.html_file' => ['nullable', 'string'],
+            'redesign.html_base64' => ['nullable', 'string'],
         ]);
 
         if ((string) $validated['lead_id'] !== (string) $auditJob->lead_id) {
@@ -100,6 +110,9 @@ class WorkerJobController extends Controller
         $audit = DB::transaction(function () use ($auditJob, $validated): Audit {
             $scores = $validated['scores'];
             $screenshots = $validated['screenshots'] ?? [];
+            $storedScreenshots = $this->storeAuditAssets($screenshots, 'screenshots');
+            $redesign = $validated['redesign'] ?? [];
+            $storedRedesign = $this->storeAuditAssets($redesign, 'redesigns');
 
             $audit = Audit::create([
                 'lead_id' => $auditJob->lead_id,
@@ -115,8 +128,10 @@ class WorkerJobController extends Controller
                 'recommendations_json' => $validated['recommendations'] ?? [],
                 'technology_json' => $validated['technology'] ?? [],
                 'contact_json' => $validated['contact'] ?? [],
-                'desktop_screenshot_path' => $screenshots['desktop_file'] ?? null,
-                'mobile_screenshot_path' => $screenshots['mobile_file'] ?? null,
+                'redesign_concept_json' => $redesign['concept'] ?? [],
+                'desktop_screenshot_path' => $storedScreenshots['desktop_file'] ?? $screenshots['desktop_file'] ?? null,
+                'mobile_screenshot_path' => $storedScreenshots['mobile_file'] ?? $screenshots['mobile_file'] ?? null,
+                'redesign_mockup_path' => $storedRedesign['html_file'] ?? $redesign['html_file'] ?? null,
             ]);
 
             $auditJob->update([
@@ -191,5 +206,38 @@ class WorkerJobController extends Controller
 
         return $worker;
     }
-}
 
+    /**
+     * @return array<string, string>
+     */
+    private function storeAuditAssets(array $payload, string $directory): array
+    {
+        $stored = [];
+        $publicDirectory = public_path($directory);
+        File::ensureDirectoryExists($publicDirectory);
+
+        foreach ([
+            'desktop_base64' => ['desktop_file', 'png'],
+            'mobile_base64' => ['mobile_file', 'png'],
+            'desktop_jpeg_base64' => ['desktop_file', 'jpg'],
+            'mobile_jpeg_base64' => ['mobile_file', 'jpg'],
+            'html_base64' => ['html_file', 'html'],
+        ] as $sourceKey => [$targetKey, $extension]) {
+            if (empty($payload[$sourceKey]) || ! is_string($payload[$sourceKey])) {
+                continue;
+            }
+
+            $raw = preg_replace('/^data:[^;]+;base64,/', '', $payload[$sourceKey]);
+            $bytes = base64_decode($raw, true);
+            if ($bytes === false) {
+                continue;
+            }
+
+            $filename = Str::uuid().'.'.$extension;
+            File::put($publicDirectory.DIRECTORY_SEPARATOR.$filename, $bytes);
+            $stored[$targetKey] = "/{$directory}/{$filename}";
+        }
+
+        return $stored;
+    }
+}
