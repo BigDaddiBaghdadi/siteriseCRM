@@ -261,6 +261,32 @@
         .reason-panel.bad { border-color: rgb(229 45 39 / 24%); background: #fff7f7; }
         .reason-panel.good { border-color: rgb(96 46 255 / 22%); background: #fbfaff; }
         .review-list li { margin-bottom: 8px; }
+        .readable-stack { display: grid; gap: 10px; }
+        .readable-row {
+            display: grid;
+            grid-template-columns: 130px minmax(0, 1fr);
+            gap: 12px;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .readable-row:last-child { border-bottom: 0; }
+        .readable-label { color: var(--muted); font-weight: 800; font-size: 12px; text-transform: uppercase; }
+        .readable-pill {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            margin: 0 6px 6px 0;
+            padding: 5px 9px;
+            border-radius: 999px;
+            border: 1px solid rgb(96 46 255 / 18%);
+            background: #fbfaff;
+            color: var(--accent-dark);
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+        .readable-pill.strong { color: var(--text); background: #fff; }
+        .readable-pill.positive { border-color: rgb(15 118 110 / 22%); background: #ecfdf5; color: #0f766e; }
+        .readable-pill.warning { border-color: rgb(238 153 130 / 36%); background: var(--warm-soft); color: #8b321e; }
         @media (max-width: 900px) {
             .shell { grid-template-columns: 1fr; }
             .sidebar { position: static; }
@@ -269,6 +295,7 @@
             .lead-review-shot { border-right: 0; border-bottom: 1px solid var(--line); }
             .inline-review-wide { grid-column: auto; }
             .topbar { align-items: flex-start; flex-direction: column; }
+            .readable-row { grid-template-columns: 1fr; gap: 5px; }
         }
     </style>
 </head>

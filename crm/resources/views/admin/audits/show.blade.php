@@ -22,7 +22,38 @@
 @endsection
 
 @section('content')
-    @php($concept = $audit->redesign_concept_json ?? [])
+    @php
+        $concept = $audit->redesign_concept_json ?? [];
+        $contact = $audit->contact_json ?? [];
+        $technology = $audit->technology_json ?? [];
+        $emails = collect([$audit->lead->email])->merge($contact['emails'] ?? [])->filter()->unique()->values();
+        $phones = collect([$audit->lead->phone])->merge($contact['phones'] ?? [])->filter()->unique()->values();
+        $contactPage = $contact['contact_page'] ?? null;
+        $issues = collect($audit->issues_json ?? [])->filter();
+        $recommendations = collect($audit->recommendations_json ?? [])->filter();
+
+        if ($issues->count() < 6) {
+            $issues = $issues
+                ->merge($audit->redesign_score !== null && $audit->redesign_score >= 70 ? ['High redesign score means the current site likely has a visible opportunity for a stronger first impression.'] : [])
+                ->merge($emails->isEmpty() ? ['No public email was found by the worker, which makes outreach and lead capture weaker.'] : [])
+                ->merge($phones->isEmpty() ? ['No phone number was easy for the worker to detect, which hurts mobile conversion.'] : [])
+                ->merge(empty($technology['analytics'] ?? false) ? ['No obvious analytics tracking was detected, so the business may not know what produces leads.'] : [])
+                ->merge(empty($technology['cms'] ?? null) ? ['The website platform was not obvious, which can make maintenance and redesign planning harder to qualify quickly.'] : [])
+                ->unique()
+                ->values();
+        }
+
+        if ($recommendations->count() < 6) {
+            $recommendations = $recommendations
+                ->merge(['Make the hero section clearer with one strong offer and one primary call button.'])
+                ->merge(['Add visible trust proof: reviews, certifications, client logos, before/after work, or local credibility signals.'])
+                ->merge(['Create a cleaner service section that is easy to scan on mobile.'])
+                ->merge(['Add conversion tracking for calls, forms, and booking clicks.'])
+                ->merge(['Use stronger spacing, headings, and contrast so the page feels more modern immediately.'])
+                ->unique()
+                ->values();
+        }
+    @endphp
 
     <div class="grid grid-4">
         <div class="panel"><div class="muted">Overall</div><div class="metric">{{ $audit->overall_score ?? 'n/a' }}</div></div>
@@ -88,9 +119,9 @@
     <div class="grid grid-2">
         <section class="panel reason-panel bad">
             <h2>Why the website sucks</h2>
-            @if ($audit->issues_json)
+            @if ($issues->isNotEmpty())
                 <ul class="list review-list">
-                    @foreach ($audit->issues_json as $issue)
+                    @foreach ($issues as $issue)
                         <li>{{ $issue }}</li>
                     @endforeach
                 </ul>
@@ -101,9 +132,9 @@
 
         <section class="panel reason-panel good">
             <h2>What can be done better</h2>
-            @if ($audit->recommendations_json)
+            @if ($recommendations->isNotEmpty())
                 <ul class="list review-list">
-                    @foreach ($audit->recommendations_json as $recommendation)
+                    @foreach ($recommendations as $recommendation)
                         <li>{{ $recommendation }}</li>
                     @endforeach
                 </ul>
@@ -138,12 +169,70 @@
     <div class="grid grid-2">
         <section class="panel">
             <h2>Contact found by worker</h2>
-            <div class="pre">{{ json_encode($audit->contact_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</div>
+            <div class="readable-stack">
+                <div class="readable-row">
+                    <span class="readable-label">Emails</span>
+                    <div>
+                        @forelse ($emails as $email)
+                            <a class="readable-pill" href="mailto:{{ $email }}">{{ $email }}</a>
+                        @empty
+                            <span class="muted">No email found</span>
+                        @endforelse
+                    </div>
+                </div>
+                <div class="readable-row">
+                    <span class="readable-label">Phones</span>
+                    <div>
+                        @forelse ($phones as $phone)
+                            <a class="readable-pill" href="tel:{{ preg_replace('/\s+/', '', $phone) }}">{{ $phone }}</a>
+                        @empty
+                            <span class="muted">No phone found</span>
+                        @endforelse
+                    </div>
+                </div>
+                <div class="readable-row">
+                    <span class="readable-label">Contact page</span>
+                    <div>
+                        @if ($contactPage)
+                            <a href="{{ $contactPage }}" target="_blank" rel="noreferrer">{{ parse_url($contactPage, PHP_URL_HOST) ?: $contactPage }}</a>
+                        @else
+                            <span class="muted">No dedicated contact page detected</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section class="panel">
             <h2>Technology</h2>
-            <div class="pre">{{ json_encode($audit->technology_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</div>
+            <div class="readable-stack">
+                <div class="readable-row">
+                    <span class="readable-label">Website platform</span>
+                    <div>
+                        @if (! empty($technology['cms']))
+                            <span class="readable-pill strong">{{ $technology['cms'] }}</span>
+                        @else
+                            <span class="muted">Unknown or custom-built</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="readable-row">
+                    <span class="readable-label">Analytics</span>
+                    <div>
+                        <span class="readable-pill {{ ! empty($technology['analytics']) ? 'positive' : 'warning' }}">
+                            {{ ! empty($technology['analytics']) ? 'Tracking detected' : 'No tracking detected' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="readable-row">
+                    <span class="readable-label">Chat / quick inquiry</span>
+                    <div>
+                        <span class="readable-pill {{ ! empty($technology['chat_widget']) ? 'positive' : 'warning' }}">
+                            {{ ! empty($technology['chat_widget']) ? 'Widget detected' : 'No widget detected' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 @endsection

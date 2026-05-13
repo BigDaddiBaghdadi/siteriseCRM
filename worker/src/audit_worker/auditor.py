@@ -62,6 +62,8 @@ def audit_url(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
     ]
 
     language = _detect_language(text, parser.title, parser.meta_description)
+    lowered_html = html.lower()
+    cms = _detect_cms(html)
 
     signals = {
         "has_title": bool(parser.title),
@@ -73,6 +75,9 @@ def audit_url(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
         "uses_https": url.lower().startswith("https://"),
         "text_length": len(text),
         "language": language,
+        "has_analytics": "google-analytics" in lowered_html or "gtag(" in lowered_html,
+        "has_chat_widget": "intercom" in lowered_html or "crisp.chat" in lowered_html,
+        "cms": cms,
     }
 
     scores = score_signals(signals)
@@ -80,17 +85,17 @@ def audit_url(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
     return {
         "business_summary": _summary_from_page(parser.title, parser.meta_description),
         "scores": scores,
-        "issues": _issues_from_signals(signals),
-        "recommendations": _recommendations_from_signals(signals),
+        "issues": _enrich_issues(_issues_from_signals(signals), signals),
+        "recommendations": _enrich_recommendations(_recommendations_from_signals(signals), signals),
         "contact": {
             "emails": emails[:5],
             "phones": phones[:5],
             "contact_page": contact_links[0] if contact_links else None,
         },
         "technology": {
-            "cms": _detect_cms(html),
-            "analytics": "google-analytics" in html.lower() or "gtag(" in html.lower(),
-            "chat_widget": "intercom" in html.lower() or "crisp.chat" in html.lower(),
+            "cms": cms,
+            "analytics": signals["has_analytics"],
+            "chat_widget": signals["has_chat_widget"],
         },
         "screenshots": {
             "desktop_file": None,
@@ -171,6 +176,51 @@ def _recommendations_from_signals(signals: dict[str, Any]) -> list[str]:
     if signals["text_length"] < 500:
         recommendations.append("Добавете по-ясно съдържание за услуги, доверие и предимства" if bg else "Add clearer service and trust content")
     return recommendations
+
+
+def _enrich_issues(issues: list[str], signals: dict[str, Any]) -> list[str]:
+    enriched = list(issues)
+
+    if not signals.get("has_phone"):
+        enriched.append("Phone number was not easy for the worker to find on the page")
+    if int(signals.get("text_length", 0)) < 1200:
+        enriched.append("Homepage content looks light, so services, proof, and reasons to choose them may be under-explained")
+    if not signals.get("has_analytics"):
+        enriched.append("No obvious analytics tracking was detected, so the business may not know which pages generate leads")
+    if not signals.get("cms"):
+        enriched.append("The site platform was not obvious, which can make maintenance and future changes harder to qualify quickly")
+
+    return _unique(enriched)
+
+
+def _enrich_recommendations(recommendations: list[str], signals: dict[str, Any]) -> list[str]:
+    enriched = list(recommendations)
+
+    if signals.get("has_cta_language"):
+        enriched.append("Make the main call to action more visually dominant above the fold")
+    if not signals.get("has_phone"):
+        enriched.append("Add a tap-to-call phone action in the header and mobile sticky bar")
+    if int(signals.get("text_length", 0)) >= 500:
+        enriched.append("Restructure the homepage into scannable service, proof, FAQ, and contact sections")
+    if not signals.get("has_analytics"):
+        enriched.append("Install analytics and conversion tracking for calls, forms, and booking clicks")
+    if not signals.get("has_chat_widget"):
+        enriched.append("Consider a lightweight chat or quick inquiry widget for visitors who are not ready to call")
+    enriched.append("Modernize the visual hierarchy with stronger spacing, clearer headings, and higher-contrast action buttons")
+
+    return _unique(enriched)
+
+
+def _unique(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    unique_items: list[str] = []
+    for item in items:
+        key = item.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        unique_items.append(item)
+    return unique_items
 
 
 def _detect_cms(html: str) -> str | None:
