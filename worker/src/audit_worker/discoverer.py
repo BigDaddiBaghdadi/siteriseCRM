@@ -323,24 +323,53 @@ def _overpass_businesses(area_id: int, tags: list[tuple[str, str]], limit: int, 
             ]
         )
 
-    query = f"""
-[out:json][timeout:25];
+    elements: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+    failures = []
+
+    for selector in selectors:
+        if len(elements) >= limit:
+            break
+
+        remaining = max(1, limit - len(elements))
+        query = f"""
+[out:json][timeout:12];
 area({area_id})->.searchArea;
 (
-{chr(10).join(selectors)}
+{selector}
 );
-out tags center {limit};
+out tags center {remaining};
 """
-    failures = []
-    for endpoint in OVERPASS_ENDPOINTS:
-        url = endpoint + "?data=" + quote_plus(query)
-        try:
-            payload = _json_get(url, timeout_seconds=35)
-            return payload.get("elements", [])
-        except (HTTPError, URLError, TimeoutError) as exc:
-            failures.append(f"{endpoint}: {exc}")
 
-    raise DiscoveryError("Overpass lookup failed on all endpoints. " + " | ".join(failures))
+        for endpoint in OVERPASS_ENDPOINTS:
+            url = endpoint + "?data=" + quote_plus(query)
+            try:
+                payload = _json_get(url, timeout_seconds=18)
+                for element in payload.get("elements", []):
+                    element_type = str(element.get("type", ""))
+                    element_id = int(element.get("id", 0))
+                    key = (element_type, element_id)
+                    if key in seen:
+                        continue
+
+                    seen.add(key)
+                    elements.append(element)
+                    if len(elements) >= limit:
+                        break
+                break
+            except (HTTPError, URLError, TimeoutError) as exc:
+                failures.append(f"{endpoint}: {exc}")
+
+        if len(elements) >= limit:
+            break
+
+    if elements:
+        return elements
+
+    if failures:
+        raise DiscoveryError("Overpass lookup failed or returned no candidates. " + " | ".join(failures[:6]))
+
+    return []
 
 
 def _json_get(url: str, timeout_seconds: int = 20) -> Any:
