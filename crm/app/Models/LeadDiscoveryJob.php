@@ -15,7 +15,10 @@ class LeadDiscoveryJob extends Model
     public const TARGET_NEEDS_REDESIGN = 'needs_redesign';
     public const TARGET_BOTH = 'both';
 
-    public const RESULT_LIMITS = [5, 15, 30, 50];
+    public const DEFAULT_RESULT_LIMIT = 5;
+    public const MIN_RESULT_LIMIT = 1;
+    public const MAX_RESULT_LIMIT = 50;
+    public const RESULT_LIMITS = [5, 10, 15, 25, 30, 50];
 
     protected $fillable = [
         'niche',

@@ -22,7 +22,8 @@ class LeadDiscoveryController extends Controller
                 ->get(),
             'limits' => LeadDiscoveryJob::RESULT_LIMITS,
             'targets' => [
-                LeadDiscoveryJob::TARGET_NEEDS_REDESIGN => 'Find real websites that need redesign/rebuild',
+                LeadDiscoveryJob::TARGET_NEEDS_REDESIGN => 'Websites that need an update/redesign',
+                LeadDiscoveryJob::TARGET_NO_WEBSITE => 'Businesses without a website',
             ],
             'suggestedNiches' => [
                 'Dentists',
@@ -46,9 +47,15 @@ class LeadDiscoveryController extends Controller
             'niche' => ['nullable', 'string', 'max:120', 'required_if:niche_mode,specific'],
             'city' => ['required', 'string', 'max:120'],
             'country' => ['nullable', 'string', 'max:120'],
-            'result_limit' => ['required', 'integer', Rule::in(LeadDiscoveryJob::RESULT_LIMITS)],
+            'result_limit' => [
+                'required',
+                'integer',
+                'min:'.LeadDiscoveryJob::MIN_RESULT_LIMIT,
+                'max:'.LeadDiscoveryJob::MAX_RESULT_LIMIT,
+            ],
             'target' => ['required', Rule::in([
                 LeadDiscoveryJob::TARGET_NEEDS_REDESIGN,
+                LeadDiscoveryJob::TARGET_NO_WEBSITE,
             ])],
         ]);
 

@@ -73,6 +73,15 @@ Run the local CRM:
 php artisan serve --host=127.0.0.1 --port=8010
 ```
 
+Or use the repo helper from the repository root:
+
+```powershell
+.\scripts\run-local-crm.ps1
+```
+
+Use `-Install` the first time if dependencies are missing, and `-Build` when
+you want a production asset build before serving locally.
+
 Open:
 
 ```text

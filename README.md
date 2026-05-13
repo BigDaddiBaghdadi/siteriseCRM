@@ -22,9 +22,10 @@ PLAN.md    Product and architecture plan
 
 ## Setup Docs
 
-- `docs/server-setup.md` — CRM server/database setup
-- `docs/local-development.md` — Windows/local development and portable worker setup
-- `docs/worker-deployment.md` — worker deployment notes
+- `docs/server-setup.md` - CRM server/database setup
+- `docs/local-development.md` - Windows/local development and portable worker setup
+- `docs/worker-deployment.md` - worker deployment notes
+- `docs/deployment.md` - production deployment and server operations for `crm.ux-s.com`
 
 ## Validation
 
@@ -36,4 +37,3 @@ php artisan test
 ```bash
 python3 -m py_compile worker/src/audit_worker/*.py
 ```
-

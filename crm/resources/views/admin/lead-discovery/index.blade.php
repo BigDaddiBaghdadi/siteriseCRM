@@ -1,25 +1,22 @@
 @extends('layouts.admin')
 
 @section('title', 'Lead Discovery')
-@section('subtitle', 'Find real local business websites. Click a card to open the full website review.')
+@section('subtitle', 'Queue focused discovery jobs and review returned leads one by one.')
 
 @section('content')
     <section class="panel">
         <h2>Start a discovery job</h2>
-        <form method="POST" action="{{ route('admin.lead-discovery.store') }}" class="form-grid">
+        <form method="POST" action="{{ route('admin.lead-discovery.store') }}" class="discovery-form">
             @csrf
+            <input type="hidden" id="niche_mode" name="niche_mode" value="{{ old('niche_mode', 'specific') }}">
 
-            <div>
-                <label for="niche_mode">Niche</label>
-                <select id="niche_mode" name="niche_mode">
-                    <option value="specific" @selected(old('niche_mode', 'specific') === 'specific')>Choose a niche</option>
-                    <option value="random" @selected(old('niche_mode') === 'random')>Random niche</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="niche">Business niche</label>
-                <input id="niche" name="niche" list="suggested-niches" value="{{ old('niche') }}" placeholder="Dentists, gyms, salons...">
+            <div class="form-row-full">
+                <label for="niche">Niche</label>
+                <div class="inline-field">
+                    <input id="niche" name="niche" list="suggested-niches" value="{{ old('niche') }}" placeholder="Dentists, gyms, salons...">
+                    <button type="button" class="secondary" id="random-niche-button">Random niche</button>
+                </div>
+                <div class="muted" id="niche-helper">Choose a niche or let the job pick one automatically.</div>
                 <datalist id="suggested-niches">
                     @foreach ($suggestedNiches as $niche)
                         <option value="{{ $niche }}"></option>
@@ -29,35 +26,54 @@
 
             <div>
                 <label for="city">City</label>
-                <input id="city" name="city" value="{{ old('city') }}" placeholder="Sofia" required>
+                <input id="city" name="city" list="suggested-cities" value="{{ old('city', 'Sofia') }}" placeholder="Sofia" required>
+                <datalist id="suggested-cities">
+                    <option value="Sofia"></option>
+                    <option value="Plovdiv"></option>
+                    <option value="Varna"></option>
+                    <option value="Burgas"></option>
+                    <option value="London"></option>
+                    <option value="Berlin"></option>
+                </datalist>
             </div>
 
             <div>
                 <label for="country">Country</label>
-                <input id="country" name="country" value="{{ old('country', 'Bulgaria') }}" placeholder="Bulgaria">
+                <input id="country" name="country" list="suggested-countries" value="{{ old('country', 'Bulgaria') }}" placeholder="Bulgaria">
+                <datalist id="suggested-countries">
+                    <option value="Bulgaria"></option>
+                    <option value="United Kingdom"></option>
+                    <option value="Germany"></option>
+                    <option value="United States"></option>
+                    <option value="Spain"></option>
+                    <option value="Italy"></option>
+                </datalist>
             </div>
 
             <div>
-                <label for="result_limit">Results wanted</label>
+                <label for="result_limit">Amount of leads</label>
                 <select id="result_limit" name="result_limit">
                     @foreach ($limits as $limit)
-                        <option value="{{ $limit }}" @selected((int) old('result_limit', 5) === $limit)>{{ $limit }} leads</option>
+                        <option value="{{ $limit }}" @selected((int) old('result_limit', \App\Models\LeadDiscoveryJob::DEFAULT_RESULT_LIMIT) === $limit)>{{ $limit }} leads</option>
                     @endforeach
                 </select>
             </div>
 
-            <div>
-                <label for="target">Opportunity type</label>
-                <select id="target" name="target">
+            <fieldset class="choice-field form-row-full">
+                <legend>Lead type</legend>
+                <div class="choice-grid">
                     @foreach ($targets as $value => $label)
-                        <option value="{{ $value }}" @selected(old('target', 'needs_redesign') === $value)>{{ $label }}</option>
+                        <label class="choice-card">
+                            <input type="radio" name="target" value="{{ $value }}" @checked(old('target', \App\Models\LeadDiscoveryJob::TARGET_NEEDS_REDESIGN) === $value)>
+                            <span>{{ $label }}</span>
+                        </label>
                     @endforeach
-                </select>
-            </div>
+                </div>
+            </fieldset>
 
             <div class="form-row-full actions">
                 <button type="submit">Queue discovery</button>
-                <span class="muted">The worker returns real website leads with snapshots, audit notes, and a proposed design.</span>
+                <span class="muted">The worker will return lead cards with contact details, screenshots when available, and review notes.</span>
             </div>
         </form>
     </section>
@@ -94,28 +110,33 @@
         <div class="topbar" style="margin-bottom: 10px;">
             <div>
                 <h2 style="margin: 0;">Lead cards</h2>
-                <div class="muted">Click a card to open the full website breakdown. Use Delete here only when you want to remove it.</div>
+                <div class="muted">Newest leads appear in a single review column.</div>
             </div>
         </div>
 
-        <div class="lead-card-grid">
+        <div class="lead-card-list">
             @forelse ($leads as $lead)
                 @php($audit = $lead->latestAudit)
                 @php($reviewUrl = $audit ? route('admin.audits.show', $audit) : route('admin.leads.show', $lead))
-                <article class="lead-card clickable-card" data-href="{{ $reviewUrl }}" tabindex="0" role="link" aria-label="Open review for {{ $lead->business_name }}">
-                    <div class="lead-card-media">
+                @php($issues = collect($audit?->issues_json ?? [])->filter()->take(4))
+                @php($contact = $audit?->contact_json ?? [])
+
+                <article class="lead-list-card">
+                    <div class="lead-list-media">
                         @if ($audit?->desktop_screenshot_path)
-                            <img src="{{ $audit->desktop_screenshot_path }}" alt="Screenshot for {{ $lead->business_name }}">
+                            <img src="{{ $audit->desktop_screenshot_path }}" alt="Website screenshot for {{ $lead->business_name }}">
                         @else
-                            <div class="screenshot-placeholder">Screenshot pending</div>
+                            <div class="screenshot-placeholder">
+                                {{ $lead->website_url ? 'Screenshot pending' : 'No website found' }}
+                            </div>
                         @endif
                     </div>
 
-                    <div class="lead-card-body">
+                    <div class="lead-list-body">
                         <div class="lead-card-header">
                             <div>
                                 <h3>{{ $lead->business_name }}</h3>
-                                <div class="muted">{{ $lead->category ?: 'Unknown niche' }} · {{ $lead->city ?: 'Unknown city' }}{{ $lead->country ? ', '.$lead->country : '' }}</div>
+                                <div class="muted">{{ $lead->category ?: 'Unknown niche' }} - {{ $lead->city ?: 'Unknown city' }}{{ $lead->country ? ', '.$lead->country : '' }}</div>
                             </div>
                             <div class="score-stack">
                                 @if ($audit?->redesign_score !== null)
@@ -128,30 +149,42 @@
                             </div>
                         </div>
 
-                        <div class="contact-lines">
+                        <div class="contact-lines stacked-on-small">
                             @if ($lead->website_url)
-                                <span>{{ parse_url($lead->website_url, PHP_URL_HOST) ?: $lead->website_url }}</span>
+                                <span><strong>Website:</strong> {{ parse_url($lead->website_url, PHP_URL_HOST) ?: $lead->website_url }}</span>
+                            @else
+                                <span><strong>Website:</strong> none found</span>
                             @endif
-                            @if ($lead->phone)<span>{{ $lead->phone }}</span>@endif
-                            @if ($lead->email)<span>{{ $lead->email }}</span>@endif
+                            @if ($lead->phone || ! empty($contact['phones'][0]))
+                                <span><strong>Phone:</strong> {{ $lead->phone ?: $contact['phones'][0] }}</span>
+                            @endif
+                            @if ($lead->email || ! empty($contact['emails'][0]))
+                                <span><strong>Email:</strong> {{ $lead->email ?: $contact['emails'][0] }}</span>
+                            @endif
+                            @if ($lead->source_url)
+                                <span><strong>Source:</strong> {{ parse_url($lead->source_url, PHP_URL_HOST) ?: $lead->source_url }}</span>
+                            @endif
                         </div>
 
-                        @if ($audit)
-                            <div class="score-strip">
-                                <span><strong>{{ $audit->overall_score ?? 'n/a' }}</strong> overall</span>
-                                <span><strong>{{ $audit->seo_score ?? 'n/a' }}</strong> SEO</span>
-                                <span><strong>{{ $audit->mobile_score ?? 'n/a' }}</strong> mobile</span>
-                            </div>
-                            <div class="insight-block">
-                                <strong>Pitch idea</strong>
-                                <div class="muted">{{ $audit->redesign_concept_json['hero_copy'] ?? ($audit->business_summary ?: 'Open the full review for the pitch breakdown.') }}</div>
-                            </div>
-                        @else
-                            <p class="muted">Audit pending. Open the lead to queue/review details.</p>
-                        @endif
+                        <div class="insight-block">
+                            <strong>What looks weak</strong>
+                            @if ($issues->isNotEmpty())
+                                <ul class="list insight-list">
+                                    @foreach ($issues as $issue)
+                                        <li>{{ is_array($issue) ? json_encode($issue) : $issue }}</li>
+                                    @endforeach
+                                </ul>
+                            @elseif ($lead->notes)
+                                <ul class="list insight-list">
+                                    <li>{{ $lead->notes }}</li>
+                                </ul>
+                            @else
+                                <div class="muted">No audit notes yet.</div>
+                            @endif
+                        </div>
 
                         <div class="actions card-actions">
-                            <a class="button secondary" href="{{ $reviewUrl }}">Open full review</a>
+                            <a class="button secondary" href="{{ $reviewUrl }}">Further review</a>
                             <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
                                 @csrf
                                 @method('DELETE')
@@ -167,14 +200,26 @@
     </section>
 
     <script>
-        document.querySelectorAll('.clickable-card').forEach((card) => {
-            card.addEventListener('click', (event) => {
-                if (event.target.closest('a, button, form, input, select, textarea')) return;
-                window.location.href = card.dataset.href;
-            });
-            card.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') window.location.href = card.dataset.href;
-            });
+        const nicheMode = document.getElementById('niche_mode');
+        const nicheInput = document.getElementById('niche');
+        const helper = document.getElementById('niche-helper');
+        const randomButton = document.getElementById('random-niche-button');
+
+        function applyNicheMode() {
+            const random = nicheMode.value === 'random';
+            nicheInput.disabled = random;
+            nicheInput.required = !random;
+            randomButton.textContent = random ? 'Use specific niche' : 'Random niche';
+            helper.textContent = random
+                ? 'Random niche is enabled. The worker will choose a local-service niche for this city.'
+                : 'Choose a niche or let the job pick one automatically.';
+        }
+
+        randomButton.addEventListener('click', () => {
+            nicheMode.value = nicheMode.value === 'random' ? 'specific' : 'random';
+            applyNicheMode();
         });
+
+        applyNicheMode();
     </script>
 @endsection

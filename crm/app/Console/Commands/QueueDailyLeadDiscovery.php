@@ -18,8 +18,8 @@ class QueueDailyLeadDiscovery extends Command
     public function handle(): int
     {
         $limit = (int) $this->option('limit');
-        if (! in_array($limit, LeadDiscoveryJob::RESULT_LIMITS, true)) {
-            $this->error('Limit must be one of: '.implode(', ', LeadDiscoveryJob::RESULT_LIMITS));
+        if ($limit < LeadDiscoveryJob::MIN_RESULT_LIMIT || $limit > LeadDiscoveryJob::MAX_RESULT_LIMIT) {
+            $this->error('Limit must be between '.LeadDiscoveryJob::MIN_RESULT_LIMIT.' and '.LeadDiscoveryJob::MAX_RESULT_LIMIT.'.');
             return self::FAILURE;
         }
 

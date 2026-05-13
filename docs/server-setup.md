@@ -2,6 +2,10 @@
 
 This server can host the CRM while the worker remains portable.
 
+The current production deployment for `crm.ux-s.com` is documented in
+`docs/deployment.md`. The server uses OpenLiteSpeed in front of the Laravel
+service, not Apache.
+
 ## CRM Database
 
 Create a dedicated MariaDB database and user:

@@ -108,9 +108,10 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
             continue
 
         website = _normalize_url(_first_present(tags_map, ["website", "contact:website", "url"]))
-        # Alan wants generated leads to be actual websites, so OSM discovery only
-        # submits businesses with a website regardless of legacy target values.
-        if not website:
+
+        if target == "no_website" and website:
+            continue
+        if target == "needs_redesign" and not website:
             continue
 
         seen_names.add(business_name.lower())
@@ -132,14 +133,15 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
             "notes": _osm_pitch_note(website=website, source_url=source_url),
         }
 
-        try:
-            audit = audit_url(website, timeout_seconds=12)
-            audit.update(capture_snapshots_and_redesign(website, business_name, audit, timeout_seconds=20))
-            lead["audit"] = audit
-        except Exception:
-            # Keep generated leads high quality: real website plus audit, snapshots,
-            # and redesign mockup. If a site cannot be audited/captured, skip it.
-            continue
+        if website:
+            try:
+                audit = audit_url(website, timeout_seconds=12)
+                audit.update(capture_snapshots_and_redesign(website, business_name, audit, timeout_seconds=20))
+                lead["audit"] = audit
+            except Exception:
+                # Keep generated website leads high quality: real website plus
+                # audit, snapshots, and redesign mockup.
+                continue
 
         leads.append(lead)
         if len(leads) >= limit:
