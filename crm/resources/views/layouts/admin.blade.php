@@ -178,6 +178,8 @@
         .score-pill.high { background: #fee2e2; color: #991b1b; }
         .score-pill span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
         .contact-lines { display: flex; flex-wrap: wrap; gap: 8px 12px; color: var(--muted); }
+        .email-line { flex-basis: 100%; }
+        .email-line a { font-weight: 700; overflow-wrap: anywhere; }
         .insight-block { border-top: 1px solid var(--line); padding-top: 10px; }
         .insight-list { margin-top: 8px; }
         .insight-list li { margin-bottom: 5px; }

@@ -120,6 +120,7 @@
                 @php($reviewUrl = $audit ? route('admin.audits.show', $audit) : route('admin.leads.show', $lead))
                 @php($issues = collect($audit?->issues_json ?? [])->filter()->take(4))
                 @php($contact = $audit?->contact_json ?? [])
+                @php($emails = collect([$lead->email])->merge($contact['emails'] ?? [])->filter()->unique()->values())
 
                 <article class="lead-list-card">
                     <div class="lead-list-media">
@@ -158,9 +159,16 @@
                             @if ($lead->phone || ! empty($contact['phones'][0]))
                                 <span><strong>Phone:</strong> {{ $lead->phone ?: $contact['phones'][0] }}</span>
                             @endif
-                            @if ($lead->email || ! empty($contact['emails'][0]))
-                                <span><strong>Email:</strong> {{ $lead->email ?: $contact['emails'][0] }}</span>
-                            @endif
+                            <span class="email-line">
+                                <strong>Emails:</strong>
+                                @if ($emails->isNotEmpty())
+                                    @foreach ($emails as $email)
+                                        <a href="mailto:{{ $email }}">{{ $email }}</a>@if (! $loop->last), @endif
+                                    @endforeach
+                                @else
+                                    none found
+                                @endif
+                            </span>
                             @if ($lead->source_url)
                                 <span><strong>Source:</strong> {{ parse_url($lead->source_url, PHP_URL_HOST) ?: $lead->source_url }}</span>
                             @endif
