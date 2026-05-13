@@ -14,12 +14,51 @@ class LeadDiscoveryController extends Controller
 {
     public function index(): View
     {
+        $leads = Lead::with('latestAudit')
+            ->latest()
+            ->limit(24)
+            ->get()
+            ->map(function (Lead $lead): Lead {
+                $audit = $lead->latestAudit;
+                $contact = $audit?->contact_json ?? [];
+
+                $issues = collect($audit?->issues_json ?? [])->filter();
+                $recommendations = collect($audit?->recommendations_json ?? [])->filter();
+
+                if ($audit && $issues->count() < 5) {
+                    $issues = $issues
+                        ->merge($audit->redesign_score !== null && $audit->redesign_score >= 70 ? ['High redesign score means the site likely has a visible opportunity for a stronger first impression.'] : [])
+                        ->merge(empty($contact['emails'] ?? []) ? ['Worker did not find a public email, so contact capture may be weak.'] : [])
+                        ->merge(empty($contact['contact_page'] ?? null) ? ['Contact path is not obvious enough for a cold visitor.'] : [])
+                        ->merge(empty($audit->technology_json['analytics'] ?? false) ? ['No obvious analytics tracking found, so the business may not measure leads properly.'] : [])
+                        ->unique()
+                        ->values();
+                }
+
+                if ($audit && $recommendations->count() < 5) {
+                    $recommendations = $recommendations
+                        ->merge(['Make the hero section clearer with one strong offer and one primary call button.'])
+                        ->merge(['Add visible trust proof: reviews, certifications, client logos, or local credibility signals.'])
+                        ->merge(['Create a cleaner service section that is easy to scan on mobile.'])
+                        ->merge(['Add conversion tracking for calls, forms, and booking clicks.'])
+                        ->unique()
+                        ->values();
+                }
+
+                $lead->setAttribute('discovery_issues', $issues->take(6)->values());
+                $lead->setAttribute('discovery_recommendations', $recommendations->take(5)->values());
+                $lead->setAttribute('discovery_contact', $contact);
+                $lead->setAttribute(
+                    'discovery_emails',
+                    collect([$lead->email])->merge($contact['emails'] ?? [])->filter()->unique()->values(),
+                );
+
+                return $lead;
+            });
+
         return view('admin.lead-discovery.index', [
             'jobs' => LeadDiscoveryJob::latest()->limit(12)->get(),
-            'leads' => Lead::with('latestAudit')
-                ->latest()
-                ->limit(24)
-                ->get(),
+            'leads' => $leads,
             'limits' => LeadDiscoveryJob::RESULT_LIMITS,
             'targets' => [
                 LeadDiscoveryJob::TARGET_NEEDS_REDESIGN => 'Websites that need an update/redesign',

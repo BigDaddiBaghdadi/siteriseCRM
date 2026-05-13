@@ -135,35 +135,17 @@
         </div>
 
         <div class="lead-card-list">
-            @forelse ($leads as $lead)
+            @if ($leads->isEmpty())
+                <div class="panel muted">No leads yet. Queue a discovery job to start finding opportunities.</div>
+            @endif
+
+            @foreach ($leads as $lead)
                 @php($audit = $lead->latestAudit)
                 @php($reviewUrl = $audit ? route('admin.audits.show', $audit) : route('admin.leads.show', $lead))
-                @php
-                    $issues = collect($audit?->issues_json ?? [])->filter();
-                    $recommendations = collect($audit?->recommendations_json ?? [])->filter();
-                    if ($audit && $issues->count() < 5) {
-                        $issues = $issues
-                            ->merge($audit->redesign_score !== null && $audit->redesign_score >= 70 ? ['High redesign score means the site likely has a visible opportunity for a stronger first impression.'] : [])
-                            ->merge(empty($audit->contact_json['emails'] ?? []) ? ['Worker did not find a public email, so contact capture may be weak.'] : [])
-                            ->merge(empty($audit->contact_json['contact_page'] ?? null) ? ['Contact path is not obvious enough for a cold visitor.'] : [])
-                            ->merge(empty($audit->technology_json['analytics'] ?? false) ? ['No obvious analytics tracking found, so the business may not measure leads properly.'] : [])
-                            ->unique()
-                            ->values();
-                    }
-                    if ($audit && $recommendations->count() < 5) {
-                        $recommendations = $recommendations
-                            ->merge(['Make the hero section clearer with one strong offer and one primary call button.'])
-                            ->merge(['Add visible trust proof: reviews, certifications, client logos, or local credibility signals.'])
-                            ->merge(['Create a cleaner service section that is easy to scan on mobile.'])
-                            ->merge(['Add conversion tracking for calls, forms, and booking clicks.'])
-                            ->unique()
-                            ->values();
-                    }
-                    $issues = $issues->take(6);
-                    $recommendations = $recommendations->take(5);
-                @endphp
-                @php($contact = $audit?->contact_json ?? [])
-                @php($emails = collect([$lead->email])->merge($contact['emails'] ?? [])->filter()->unique()->values())
+                @php($issues = $lead->discovery_issues)
+                @php($recommendations = $lead->discovery_recommendations)
+                @php($contact = $lead->discovery_contact)
+                @php($emails = $lead->discovery_emails)
 
                 <article class="lead-list-card">
                     <div class="lead-list-media">
@@ -255,9 +237,7 @@
                         </div>
                     </div>
                 </article>
-            @empty
-                <div class="panel muted">No leads yet. Queue a discovery job to start finding opportunities.</div>
-            @endforelse
+            @endforeach
         </div>
     </section>
 
