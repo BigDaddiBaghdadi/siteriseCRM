@@ -61,7 +61,6 @@ def audit_url(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
         if any(word in href.lower() for word in ["contact", "kontakti", "contacts"])
     ]
 
-    language = _detect_language(text, parser.title, parser.meta_description)
     lowered_html = html.lower()
     cms = _detect_cms(html)
 
@@ -74,7 +73,7 @@ def audit_url(url: str, timeout_seconds: int = 30) -> dict[str, Any]:
         "has_cta_language": _has_cta_language(text),
         "uses_https": url.lower().startswith("https://"),
         "text_length": len(text),
-        "language": language,
+        "language": "en",
         "has_analytics": "google-analytics" in lowered_html or "gtag(" in lowered_html,
         "has_chat_widget": "intercom" in lowered_html or "crisp.chat" in lowered_html,
         "cms": cms,
@@ -125,8 +124,10 @@ def _has_cta_language(text: str) -> bool:
         "get a quote",
         "request",
         "reserve",
-        "запази",
-        "контакт",
+        "call",
+        "quote",
+        "appointment",
+        "contact",
     ]
     return any(phrase in lowered for phrase in phrases)
 
@@ -139,42 +140,33 @@ def _summary_from_page(title: str, meta_description: str) -> str:
     return "Public website with limited machine-readable summary information."
 
 
-def _detect_language(*parts: str) -> str:
-    text = " ".join(parts)
-    cyrillic = len(re.findall(r"[А-Яа-я]", text))
-    latin = len(re.findall(r"[A-Za-z]", text))
-    return "bg" if cyrillic >= max(6, latin // 3) else "en"
-
-
 def _issues_from_signals(signals: dict[str, Any]) -> list[str]:
-    bg = signals.get("language") == "bg"
     issues: list[str] = []
     if not signals["uses_https"]:
-        issues.append("Сайтът не използва HTTPS в одитирания URL" if bg else "Website does not use HTTPS in the audited URL")
+        issues.append("Website does not use HTTPS in the audited URL")
     if not signals["has_title"]:
-        issues.append("Липсва заглавие на страницата" if bg else "Page title is missing")
+        issues.append("Page title is missing")
     if not signals["has_meta_description"]:
-        issues.append("Липсва meta описание за търсачките" if bg else "Meta description is missing")
+        issues.append("Meta description is missing")
     if not signals["has_cta_language"]:
-        issues.append("Основният призив за действие не е достатъчно ясен" if bg else "Primary call to action is unclear")
+        issues.append("Primary call to action is unclear")
     if not signals["has_contact_email"] and not signals["has_contact_link"]:
-        issues.append("Пътят до контакт е труден за откриване" if bg else "Contact path is hard to detect")
+        issues.append("Contact path is hard to detect")
     if signals["text_length"] < 500:
-        issues.append("Началната страница изглежда бедна откъм съдържание" if bg else "Homepage content appears thin")
+        issues.append("Homepage content appears thin")
     return issues
 
 
 def _recommendations_from_signals(signals: dict[str, Any]) -> list[str]:
-    bg = signals.get("language") == "bg"
     recommendations: list[str] = []
     if not signals["has_cta_language"]:
-        recommendations.append("Добавете ясен призив за действие още в първия екран" if bg else "Add a clear homepage call to action")
+        recommendations.append("Add a clear homepage call to action")
     if not signals["has_contact_link"]:
-        recommendations.append("Направете страницата за контакт лесна за намиране" if bg else "Make the contact page easy to find")
+        recommendations.append("Make the contact page easy to find")
     if not signals["has_meta_description"]:
-        recommendations.append("Добавете кратко и ясно SEO meta описание" if bg else "Add a concise SEO meta description")
+        recommendations.append("Add a concise SEO meta description")
     if signals["text_length"] < 500:
-        recommendations.append("Добавете по-ясно съдържание за услуги, доверие и предимства" if bg else "Add clearer service and trust content")
+        recommendations.append("Add clearer service and trust content")
     return recommendations
 
 
@@ -234,4 +226,3 @@ def _detect_cms(html: str) -> str | None:
     if "squarespace" in lowered:
         return "Squarespace"
     return None
-
