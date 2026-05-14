@@ -57,6 +57,8 @@ Discovery providers:
 - `DISCOVERY_PROVIDER=demo` generates deterministic demo lead cards for end-to-end CRM testing.
 - `DISCOVERY_PROVIDER=osm` uses OpenStreetMap/Nominatim/Overpass with no API key. It works best for mapped categories such as Dentists, Beauty Salons, Gyms, Restaurants, Plumbers, Law Firms, and Accountants.
 
+OSM discovery submits only audited websites with real outreach potential. A candidate is skipped as low-priority when it already looks healthy; it qualifies when the audit has a redesign score of 60+, an overall score of 80 or lower, or concrete pitch issues such as missing HTTPS, missing SEO basics, unclear CTA, hard-to-detect contact path, or thin content.
+
 A paid provider adapter can be added later for broader coverage, such as Google Places, SerpAPI, DataForSEO, or Apify.
 
 ## Windows Local Worker

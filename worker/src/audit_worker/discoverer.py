@@ -177,6 +177,23 @@ NICHE_TAGS: dict[str, list[tuple[str, str]]] = {
     "yoga studios": [("leisure", "fitness_centre"), ("sport", "yoga")],
 }
 
+MIN_REDESIGN_LEAD_SCORE = 60
+MAX_STRONG_LEAD_OVERALL_SCORE = 80
+QUALIFYING_ISSUE_KEYWORDS = [
+    "does not use https",
+    "не използва https",
+    "title is missing",
+    "заглавие",
+    "meta description is missing",
+    "meta описание",
+    "primary call to action is unclear",
+    "призив за действие",
+    "contact path is hard",
+    "пътят до контакт",
+    "homepage content appears thin",
+    "бедна откъм съдържание",
+]
+
 
 class DiscoveryError(RuntimeError):
     pass
@@ -210,7 +227,9 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
     limit = max(1, min(int(job.get("result_limit") or 15), 50))
     tags = _tags_for_niche(niche)
     area_id = _nominatim_area_id(city=city, country=country)
-    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 10, target=target)
+    # Fetch more candidates than requested because we now filter out websites
+    # that already look healthy enough to be poor outreach prospects.
+    elements = _overpass_businesses(area_id=area_id, tags=tags, limit=limit * 25, target=target)
 
     leads: list[dict[str, Any]] = []
     seen_names: set[str] = set()
@@ -251,7 +270,11 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
             try:
                 audit = audit_url(website, timeout_seconds=12)
                 audit.update(capture_snapshots_and_redesign(website, business_name, audit, timeout_seconds=20))
+                qualified, reason = _audit_has_redesign_lead_potential(audit)
+                if not qualified:
+                    continue
                 lead["audit"] = audit
+                lead["notes"] = f"{lead['notes']} Lead filter: {reason}."
             except Exception:
                 # Keep generated website leads high quality: real website plus
                 # audit, snapshots, and redesign mockup.
@@ -265,6 +288,46 @@ def _osm_leads(job: dict[str, Any]) -> list[dict[str, Any]]:
         raise DiscoveryError(f"No OSM website leads found for {niche} in {city} matching target={target}.")
 
     return leads
+
+
+def _audit_has_redesign_lead_potential(audit: dict[str, Any]) -> tuple[bool, str]:
+    """Return whether an audited website is worth submitting as a lead.
+
+    The crawler should not fill the CRM with already-polished websites. A site
+    qualifies when the audit shows a strong redesign/upgrade signal: high
+    redesign score, low overall score, or concrete issues we can honestly pitch.
+    """
+
+    scores = audit.get("scores") or {}
+    overall = _score_int(scores.get("overall"))
+    redesign = _score_int(scores.get("redesign"))
+    issues = [str(issue).strip() for issue in audit.get("issues") or [] if str(issue).strip()]
+
+    if redesign is not None and redesign >= MIN_REDESIGN_LEAD_SCORE:
+        return True, f"redesign score {redesign} >= {MIN_REDESIGN_LEAD_SCORE}"
+
+    if overall is not None and overall <= MAX_STRONG_LEAD_OVERALL_SCORE:
+        return True, f"overall score {overall} <= {MAX_STRONG_LEAD_OVERALL_SCORE}"
+
+    matching_issues = [issue for issue in issues if _is_qualifying_issue(issue)]
+    if matching_issues:
+        return True, f"qualifying issue: {matching_issues[0]}"
+
+    return False, "website looks healthy; skip as low-priority lead"
+
+
+def _score_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_qualifying_issue(issue: str) -> bool:
+    lowered = issue.lower()
+    return any(keyword in lowered for keyword in QUALIFYING_ISSUE_KEYWORDS)
 
 
 def _nominatim_area_id(city: str, country: str | None) -> int:

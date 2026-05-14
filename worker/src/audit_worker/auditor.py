@@ -128,6 +128,13 @@ def _has_cta_language(text: str) -> bool:
         "quote",
         "appointment",
         "contact",
+        "запитване",
+        "запази",
+        "запазете",
+        "резервирайте",
+        "оглед",
+        "контакт",
+        "свържете",
     ]
     return any(phrase in lowered for phrase in phrases)
 
