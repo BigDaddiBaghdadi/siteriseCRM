@@ -122,13 +122,47 @@
             '[Твоето име]',
         ]);
         $pitchEmail = implode("\n", $pitchEmailLines);
+
+        $summaryCards = [
+            [
+                'label' => 'Overall',
+                'value' => $audit->overall_score ?? 'n/a',
+                'info' => 'A blended audit score across design quality, clarity, conversion basics, technical signals, and SEO. Higher means the website is healthier overall.',
+            ],
+            [
+                'label' => 'Redesign pitch',
+                'value' => $audit->redesign_score ?? 'n/a',
+                'info' => 'Shows how strong the opportunity is to pitch a redesign. Higher usually means the website has clearer visual, trust, or conversion problems worth mentioning.',
+            ],
+            [
+                'label' => 'SEO',
+                'value' => $audit->seo_score ?? 'n/a',
+                'info' => 'Checks basic search-readiness signals like titles, structure, indexability, and content clarity. It is a quick lead qualification signal, not a full SEO audit.',
+            ],
+            [
+                'label' => 'Lead status',
+                'value' => str_replace('_', ' ', $audit->lead->status),
+                'info' => 'Shows where this lead currently sits in the CRM workflow, so you can quickly tell whether it is new, queued, reviewed, approved, rejected, or already actioned.',
+                'metricClass' => 'audit-status-metric',
+            ],
+        ];
     @endphp
 
     <div class="grid grid-4">
-        <div class="panel"><div class="muted">Overall</div><div class="metric">{{ $audit->overall_score ?? 'n/a' }}</div></div>
-        <div class="panel"><div class="muted">Redesign pitch</div><div class="metric">{{ $audit->redesign_score ?? 'n/a' }}</div></div>
-        <div class="panel"><div class="muted">SEO</div><div class="metric">{{ $audit->seo_score ?? 'n/a' }}</div></div>
-        <div class="panel"><div class="muted">Lead status</div><div class="metric" style="font-size: 18px;">{{ str_replace('_', ' ', $audit->lead->status) }}</div></div>
+        @foreach ($summaryCards as $card)
+            <div class="panel audit-summary-card">
+                <div class="audit-summary-top">
+                    <div class="muted">{{ $card['label'] }}</div>
+                    <div class="summary-info-wrap">
+                        <button type="button" class="summary-info-button" aria-label="More about {{ $card['label'] }}">
+                            <span aria-hidden="true">i</span>
+                        </button>
+                        <div class="summary-info-popover" role="tooltip">{{ $card['info'] }}</div>
+                    </div>
+                </div>
+                <div class="metric {{ $card['metricClass'] ?? '' }}">{{ $card['value'] }}</div>
+            </div>
+        @endforeach
     </div>
 
     <section class="panel review-hero">
