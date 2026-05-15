@@ -362,6 +362,29 @@
         .review-pitch { font-size: 28px; line-height: 1.12; font-weight: 850; letter-spacing: -.04em; margin: 0 0 12px; }
         .review-contact-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fbfaff; }
         .contact-lines.stacked { display: grid; gap: 8px; }
+        .pitch-email-subject {
+            display: grid;
+            gap: 5px;
+            margin-bottom: 10px;
+            padding: 11px 12px;
+            border: 1px solid rgb(96 46 255 / 18%);
+            border-radius: 8px;
+            background: #fbfaff;
+        }
+        .pitch-email-subject strong { color: var(--navy); font-size: 15px; }
+        .pitch-email-box {
+            min-height: 430px;
+            resize: vertical;
+            white-space: pre-wrap;
+            line-height: 1.55;
+            color: var(--navy);
+            background: #fff;
+            border-color: rgb(96 46 255 / 18%);
+        }
+        .pitch-email-box:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
         .review-snapshot-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
         .review-snapshot { max-height: 760px; }
         .review-mobile { max-height: 760px; }

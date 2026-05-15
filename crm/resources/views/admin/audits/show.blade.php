@@ -53,6 +53,75 @@
                 ->unique()
                 ->values();
         }
+
+        $businessName = $audit->lead->business_name;
+        $websiteUrl = $audit->lead->website_url;
+        $websiteHost = parse_url($websiteUrl, PHP_URL_HOST) ?: $websiteUrl;
+        $categoryPhrase = $audit->lead->category ? mb_strtolower($audit->lead->category) : 'услуги';
+        $cityPhrase = $audit->lead->city ? ' в '.$audit->lead->city : '';
+        $demoLinkPlaceholder = '[ТУК ДОБАВИ ЛИНК КЪМ САЙТА/ДЕМОТО, КОЕТО СМЕ НАПРАВИЛИ ЗА ТЯХ]';
+
+        $pitchPoints = collect();
+        if ($audit->redesign_score !== null && $audit->redesign_score >= 70) {
+            $pitchPoints->push('първото впечатление може да бъде много по-силно и по-модерно');
+        }
+        if ($issues->contains(fn ($issue) => str_contains(mb_strtolower((string) $issue), 'call to action'))) {
+            $pitchPoints->push('основният бутон/следваща стъпка не е достатъчно ясно видим');
+        }
+        if ($phones->isEmpty()) {
+            $pitchPoints->push('телефонът не се намира достатъчно лесно, особено за хора от мобилен телефон');
+        }
+        if ($emails->isEmpty()) {
+            $pitchPoints->push('не се вижда ясен имейл за директно запитване');
+        }
+        if (empty($contactPage)) {
+            $pitchPoints->push('пътят до контакт може да бъде по-кратък и очевиден');
+        }
+        if (empty($technology['analytics'] ?? false)) {
+            $pitchPoints->push('не се вижда проследяване на запитванията, което затруднява измерването на резултатите');
+        }
+        if ($pitchPoints->count() < 3) {
+            $pitchPoints = $pitchPoints
+                ->merge([
+                    'услугите и причините човек да избере бизнеса могат да се покажат по-ясно',
+                    'сайтът може да води по-бързо към обаждане, запитване или резервация',
+                    'доверителните елементи като отзиви, примери и конкретни предимства могат да бъдат по-видими',
+                ])
+                ->unique()
+                ->values();
+        }
+        $pitchPoints = $pitchPoints->take(4)->values();
+
+        $pitchSubject = 'Идея за по-силен сайт за '.$businessName;
+        $pitchEmailLines = [
+            'Тема: '.$pitchSubject,
+            '',
+            'Здравейте,',
+            '',
+            'Попаднах на сайта на '.$businessName.' - '.$websiteUrl,
+            '',
+            'Разгледах го като потенциален клиент, който търси '.$categoryPhrase.$cityPhrase.'. Има добра основа, но според мен сайтът може да носи повече запитвания, ако първото впечатление и пътят до контакт станат по-ясни.',
+            '',
+            'Няколко конкретни неща, които забелязах:',
+        ];
+
+        foreach ($pitchPoints as $point) {
+            $pitchEmailLines[] = '- '.$point;
+        }
+
+        $pitchEmailLines = array_merge($pitchEmailLines, [
+            '',
+            'Подготвили сме примерна посока как сайтът може да изглежда по-модерно и по-убедително:',
+            $demoLinkPlaceholder,
+            '',
+            'Идеята е страницата по-бързо да показва какво предлагате, защо човек да ви се довери и как да се свърже с вас без излишно търсене.',
+            '',
+            'Ако ви е интересно, мога да ви изпратя 2-3 конкретни предложения за подобрения по текущия сайт и как бихме ги направили.',
+            '',
+            'Поздрави,',
+            '[Твоето име]',
+        ]);
+        $pitchEmail = implode("\n", $pitchEmailLines);
     @endphp
 
     <div class="grid grid-4">
@@ -64,9 +133,15 @@
 
     <section class="panel review-hero">
         <div>
-            <h2>Pitch idea</h2>
-            <p class="review-pitch">{{ $concept['hero_copy'] ?? 'A clearer, faster website that turns local visitors into calls and bookings.' }}</p>
-            <p class="muted">{{ $concept['subcopy'] ?? ($audit->business_summary ?: 'No summary submitted.') }}</p>
+            <div class="section-heading-row">
+                <h2>Prepared Bulgarian email</h2>
+                <button type="button" class="secondary copy-email-button" data-copy-target="pitch-email">Copy email</button>
+            </div>
+            <div class="pitch-email-subject">
+                <span class="readable-label">Subject</span>
+                <strong>{{ $pitchSubject }}</strong>
+            </div>
+            <textarea id="pitch-email" class="pitch-email-box" readonly>{{ $pitchEmail }}</textarea>
         </div>
         <div class="review-contact-card">
             <h2>Contact information</h2>
@@ -235,4 +310,29 @@
             </div>
         </section>
     </div>
+
+    <script>
+        document.querySelectorAll('.copy-email-button').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const target = document.getElementById(button.dataset.copyTarget);
+                if (! target) {
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(target.value);
+                } catch (error) {
+                    target.focus();
+                    target.select();
+                    document.execCommand('copy');
+                }
+
+                const original = button.textContent;
+                button.textContent = 'Copied';
+                window.setTimeout(() => {
+                    button.textContent = original;
+                }, 1400);
+            });
+        });
+    </script>
 @endsection
