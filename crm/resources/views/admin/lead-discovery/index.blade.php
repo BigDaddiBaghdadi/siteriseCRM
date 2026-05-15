@@ -147,7 +147,7 @@
                 @php($contact = $lead->discovery_contact)
                 @php($emails = $lead->discovery_emails)
 
-                <article class="lead-list-card">
+                <article class="lead-list-card clickable-card" data-review-url="{{ $reviewUrl }}" role="link" tabindex="0" aria-label="Open {{ $lead->business_name }} for further review">
                     <div class="lead-list-media">
                         @if ($audit?->desktop_screenshot_path)
                             <img src="{{ $audit->desktop_screenshot_path }}" alt="Website screenshot for {{ $lead->business_name }}">
@@ -166,7 +166,11 @@
                             </div>
                             <div class="score-stack">
                                 @if ($audit?->redesign_score !== null)
-                                    <div class="score-pill {{ $audit->redesign_score >= 75 ? 'high' : 'mid' }}">
+                                    <div
+                                        class="score-pill {{ $audit->redesign_score >= 75 ? 'high' : 'mid' }} has-tooltip"
+                                        tabindex="0"
+                                        data-tooltip="Pitch score estimates how strong this lead is for a redesign offer. Higher scores mean the site has clearer signs of missed conversion, weak trust, or outdated presentation."
+                                    >
                                         {{ $audit->redesign_score }}
                                         <span>pitch</span>
                                     </div>
@@ -271,6 +275,27 @@
             progressCopy.textContent = 'Waiting for the worker to pick it up.';
             queueButton.disabled = true;
             queueButton.textContent = 'Queueing...';
+        });
+
+        document.querySelectorAll('[data-review-url]').forEach((card) => {
+            card.addEventListener('click', (event) => {
+                const target = event.target instanceof Element ? event.target : null;
+                if (target?.closest('a, button, form, input, select, textarea, [data-no-card-click]')) {
+                    return;
+                }
+
+                window.location.href = card.dataset.reviewUrl;
+            });
+
+            card.addEventListener('keydown', (event) => {
+                const target = event.target instanceof Element ? event.target : null;
+                if (
+                    event.key === 'Enter'
+                    && ! target?.closest('a, button, form, input, select, textarea, [data-no-card-click]')
+                ) {
+                    window.location.href = card.dataset.reviewUrl;
+                }
+            });
         });
     </script>
 @endsection
