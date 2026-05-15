@@ -385,7 +385,8 @@
         }
         .pitch-email-field.is-copy-success {
             border-color: #0f766e;
-            box-shadow: 0 0 0 3px rgb(15 118 110 / 14%);
+            border-width: 3px;
+            box-shadow: 0 0 0 4px rgb(15 118 110 / 16%);
         }
         .pitch-email-box {
             min-height: 430px;
