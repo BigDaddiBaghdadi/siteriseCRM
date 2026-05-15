@@ -345,7 +345,11 @@
                 const label = button.querySelector('.copy-email-label');
                 const field = target.closest('.pitch-email-field');
                 button.classList.add('is-copied');
-                field?.classList.add('is-copy-success');
+                if (field) {
+                    field.classList.remove('is-copy-success');
+                    void field.offsetWidth;
+                    field.classList.add('is-copy-success');
+                }
                 if (label) {
                     label.textContent = 'Copied';
                 }
@@ -357,7 +361,7 @@
                 }, 1400);
                 window.setTimeout(() => {
                     field?.classList.remove('is-copy-success');
-                }, 520);
+                }, 760);
             });
         });
     </script>

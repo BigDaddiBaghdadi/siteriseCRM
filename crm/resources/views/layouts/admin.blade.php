@@ -373,11 +373,23 @@
         }
         .pitch-email-subject strong { color: var(--navy); font-size: 15px; }
         .pitch-email-field {
+            isolation: isolate;
             position: relative;
             border: 1px solid rgb(96 46 255 / 18%);
             border-radius: 8px;
             background: #fff;
             transition: border-color .16s ease, box-shadow .16s ease;
+        }
+        .pitch-email-field::after {
+            content: "";
+            position: absolute;
+            inset: -2px;
+            z-index: 1;
+            pointer-events: none;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            opacity: 0;
+            transform: scale(.995);
         }
         .pitch-email-field:focus-within {
             border-color: var(--accent);
@@ -385,8 +397,30 @@
         }
         .pitch-email-field.is-copy-success {
             border-color: #0f766e;
-            border-width: 3px;
-            box-shadow: 0 0 0 4px rgb(15 118 110 / 16%);
+            box-shadow: inset 0 0 0 1px rgb(15 118 110 / 42%), 0 0 0 3px rgb(15 118 110 / 10%);
+        }
+        .pitch-email-field.is-copy-success::after {
+            animation: pitchEmailCopySuccess .72s cubic-bezier(.16, 1, .3, 1);
+        }
+        @keyframes pitchEmailCopySuccess {
+            0% {
+                opacity: 0;
+                border-color: rgb(15 118 110 / 0%);
+                box-shadow: 0 0 0 0 rgb(15 118 110 / 0%);
+                transform: scale(.995);
+            }
+            24% {
+                opacity: 1;
+                border-color: rgb(15 118 110 / 95%);
+                box-shadow: 0 0 0 5px rgb(15 118 110 / 16%);
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                border-color: rgb(15 118 110 / 0%);
+                box-shadow: 0 0 0 10px rgb(15 118 110 / 0%);
+                transform: scale(1.006);
+            }
         }
         .pitch-email-box {
             min-height: 430px;
