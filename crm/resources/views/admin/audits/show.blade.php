@@ -135,6 +135,12 @@
         <div>
             <div class="section-heading-row">
                 <h2>Prepared Bulgarian email</h2>
+            </div>
+            <div class="pitch-email-subject">
+                <span class="readable-label">Subject</span>
+                <strong>{{ $pitchSubject }}</strong>
+            </div>
+            <div class="pitch-email-field">
                 <button type="button" class="copy-email-button" data-copy-target="pitch-email" aria-label="Copy email">
                     <span class="copy-email-icon copy-email-icon-copy" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false">
@@ -149,12 +155,8 @@
                     </span>
                     <span class="copy-email-label">Copy</span>
                 </button>
+                <textarea id="pitch-email" class="pitch-email-box" readonly>{{ $pitchEmail }}</textarea>
             </div>
-            <div class="pitch-email-subject">
-                <span class="readable-label">Subject</span>
-                <strong>{{ $pitchSubject }}</strong>
-            </div>
-            <textarea id="pitch-email" class="pitch-email-box" readonly>{{ $pitchEmail }}</textarea>
         </div>
         <div class="review-contact-card">
             <h2>Contact information</h2>
@@ -341,7 +343,9 @@
                 }
 
                 const label = button.querySelector('.copy-email-label');
+                const field = target.closest('.pitch-email-field');
                 button.classList.add('is-copied');
+                field?.classList.add('is-copy-success');
                 if (label) {
                     label.textContent = 'Copied';
                 }
@@ -351,6 +355,9 @@
                         label.textContent = 'Copy';
                     }
                 }, 1400);
+                window.setTimeout(() => {
+                    field?.classList.remove('is-copy-success');
+                }, 520);
             });
         });
     </script>
