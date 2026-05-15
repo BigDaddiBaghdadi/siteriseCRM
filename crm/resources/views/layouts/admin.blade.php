@@ -390,13 +390,14 @@
         .pitch-email-box {
             min-height: 430px;
             resize: vertical;
+            scrollbar-gutter: stable;
             white-space: pre-wrap;
             line-height: 1.55;
             color: var(--navy);
             background: transparent;
             border: 0;
             border-radius: 8px;
-            padding-right: 92px;
+            padding-right: 124px;
         }
         .pitch-email-box:focus {
             box-shadow: none;
@@ -404,7 +405,7 @@
         .copy-email-button {
             position: absolute;
             top: 8px;
-            right: 8px;
+            right: 28px;
             z-index: 2;
             display: inline-flex;
             align-items: center;
