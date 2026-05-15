@@ -220,6 +220,42 @@
         .lead-list-card.clickable-card { cursor: pointer; }
         .lead-list-card.clickable-card a,
         .lead-list-card.clickable-card button { cursor: pointer; }
+        .lead-list-card.is-deleting {
+            pointer-events: none;
+            overflow: hidden;
+            animation: lead-card-delete .42s ease forwards;
+        }
+        .lead-list-card.is-deleting .lead-list-media,
+        .lead-list-card.is-deleting .lead-list-body {
+            animation: lead-card-content-delete .34s ease forwards;
+        }
+        @keyframes lead-card-delete {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                height: var(--delete-height, auto);
+                margin-bottom: 0;
+            }
+            55% {
+                opacity: 0;
+                transform: translateY(-8px) scale(.985);
+                border-color: rgb(238 153 130 / 60%);
+                box-shadow: 0 18px 42px rgb(238 153 130 / 16%);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-12px) scale(.97);
+                height: 0;
+                margin-bottom: -14px;
+                border-width: 0;
+            }
+        }
+        @keyframes lead-card-content-delete {
+            to {
+                opacity: 0;
+                filter: blur(3px);
+            }
+        }
         .lead-list-media {
             background: #f1efff;
             min-height: 260px;

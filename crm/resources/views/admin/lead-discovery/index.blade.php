@@ -233,7 +233,7 @@
 
                         <div class="actions card-actions">
                             <a class="button secondary" href="{{ $reviewUrl }}">Further review</a>
-                            <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" onsubmit="return confirm('Delete this lead and its audits?');">
+                            <form method="post" action="{{ route('admin.leads.destroy', $lead) }}" class="lead-delete-form" data-lead-name="{{ $lead->business_name }}">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="danger">Delete</button>
@@ -294,6 +294,49 @@
                     && ! target?.closest('a, button, form, input, select, textarea, [data-no-card-click]')
                 ) {
                     window.location.href = card.dataset.reviewUrl;
+                }
+            });
+        });
+
+        document.querySelectorAll('.lead-delete-form').forEach((form) => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const card = form.closest('.lead-list-card');
+                const button = form.querySelector('button[type="submit"]');
+                const leadName = form.dataset.leadName || 'this lead';
+
+                if (! window.confirm(`Delete ${leadName} and its audits?`)) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Deleting...';
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: new FormData(form),
+                    });
+
+                    if (! response.ok) {
+                        throw new Error('Delete failed');
+                    }
+
+                    if (card) {
+                        card.style.setProperty('--delete-height', `${card.offsetHeight}px`);
+                        card.classList.add('is-deleting');
+                        window.setTimeout(() => card.remove(), 460);
+                    }
+                } catch (error) {
+                    button.disabled = false;
+                    button.textContent = 'Delete';
+                    window.alert('Could not delete this lead. Please refresh and try again.');
                 }
             });
         });
