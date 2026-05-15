@@ -244,8 +244,23 @@
         .lead-card-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
         .lead-card h3 { margin: 0 0 3px; font-size: 17px; }
         .lead-list-card h3 { margin: 0 0 3px; font-size: 18px; }
-        .score-pill { min-width: 58px; border-radius: 10px; padding: 7px; text-align: center; font-size: 22px; font-weight: 800; background: var(--warm-soft); color: #8b321e; }
-        .score-pill.high { background: var(--accent-soft); color: var(--accent-dark); }
+        .score-pill {
+            min-width: 58px;
+            border: 1px solid rgb(238 153 130 / 34%);
+            border-radius: 10px;
+            padding: 7px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--warm-soft), #fff);
+            color: var(--navy);
+            box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
+        }
+        .score-pill.high {
+            border-color: rgb(96 46 255 / 28%);
+            background: linear-gradient(135deg, var(--accent), var(--navy));
+            color: #fff;
+        }
         .score-pill span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
         .score-pill.has-tooltip { position: relative; outline: 0; }
         .score-pill.has-tooltip::after {
