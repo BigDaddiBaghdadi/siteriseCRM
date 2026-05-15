@@ -385,6 +385,48 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-soft);
         }
+        .copy-email-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 32px;
+            padding: 6px 9px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color .12s ease, color .12s ease;
+        }
+        .copy-email-button:hover,
+        .copy-email-button:focus-visible {
+            background: var(--accent-soft);
+            color: var(--navy);
+            text-decoration: none;
+            outline: 0;
+        }
+        .copy-email-button.is-copied {
+            background: #ecfdf5;
+            color: #0f766e;
+        }
+        .copy-email-icon {
+            display: inline-flex;
+            width: 16px;
+            height: 16px;
+        }
+        .copy-email-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .copy-email-icon-check { display: none; }
+        .copy-email-button.is-copied .copy-email-icon-copy { display: none; }
+        .copy-email-button.is-copied .copy-email-icon-check { display: inline-flex; }
         .review-snapshot-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
         .review-snapshot { max-height: 760px; }
         .review-mobile { max-height: 760px; }

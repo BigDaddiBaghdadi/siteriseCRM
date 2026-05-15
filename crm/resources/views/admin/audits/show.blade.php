@@ -135,7 +135,20 @@
         <div>
             <div class="section-heading-row">
                 <h2>Prepared Bulgarian email</h2>
-                <button type="button" class="secondary copy-email-button" data-copy-target="pitch-email">Copy email</button>
+                <button type="button" class="copy-email-button" data-copy-target="pitch-email" aria-label="Copy email">
+                    <span class="copy-email-icon copy-email-icon-copy" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <rect x="9" y="9" width="10" height="10" rx="2"></rect>
+                            <path d="M5 15V7a2 2 0 0 1 2-2h8"></path>
+                        </svg>
+                    </span>
+                    <span class="copy-email-icon copy-email-icon-check" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="m5 12 4 4L19 6"></path>
+                        </svg>
+                    </span>
+                    <span class="copy-email-label">Copy</span>
+                </button>
             </div>
             <div class="pitch-email-subject">
                 <span class="readable-label">Subject</span>
@@ -327,10 +340,16 @@
                     document.execCommand('copy');
                 }
 
-                const original = button.textContent;
-                button.textContent = 'Copied';
+                const label = button.querySelector('.copy-email-label');
+                button.classList.add('is-copied');
+                if (label) {
+                    label.textContent = 'Copied';
+                }
                 window.setTimeout(() => {
-                    button.textContent = original;
+                    button.classList.remove('is-copied');
+                    if (label) {
+                        label.textContent = 'Copy';
+                    }
                 }, 1400);
             });
         });
